@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Market Status — Nifty &amp; Sensex</title>
+<link rel="manifest" href="./market-status-manifest-v2.json">
+<link rel="icon" href="./market-status-icon-192-v2.png">
+<link rel="apple-touch-icon" href="./market-status-icon-192-v2.png">
+<meta name="theme-color" content="#0F1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Market Status">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+  :root{
+    --bg:#0F1115;
+    --card:#171A21;
+    --card2:#1D2128;
+    --line:#282D37;
+    --text:#EDEEF0;
+    --muted:#8A8F98;
+    --gold:#D4A72C;
+    --gold-dim:#8A722A;
+    --up:#2FBF71;
+    --down:#E5484D;
+    --flat:#8A8F98;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .nums{font-variant-numeric:tabular-nums; font-feature-settings:"tnum";}
+  header{position:sticky; top:0; z-index:10; background:rgba(15,17,21,0.92); backdrop-filter:blur(8px);
+    padding:14px 16px 10px; border-bottom:1px solid var(--line);}
+  header h1{margin:0; font-size:17px; font-weight:600; letter-spacing:0.2px;}
+  header .sub{margin-top:2px; font-size:12px; color:var(--muted);}
+  main{padding:14px 14px 90px; max-width:720px; margin:0 auto;}
+
+  .idx-row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;}
+  .idx-card{background:linear-gradient(180deg,var(--card2),var(--card)); border:1px solid var(--line);
+    border-radius:14px; padding:14px;}
+  .idx-card .name{font-size:12px; color:var(--muted); margin-bottom:6px;}
+  .idx-card .price{font-size:22px; font-weight:700;}
+  .idx-card .delta{font-size:13px; margin-top:4px; font-weight:600;}
+  .idx-card .oc{display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:6px; padding-top:6px;}
+  .idx-card .oc:first-of-type{border-top:1px solid var(--line); margin-top:10px; padding-top:8px;}
+  .idx-card .oc b{color:var(--text); font-weight:600;}
+
+  .up{color:var(--up);}
+  .down{color:var(--down);}
+  .flat{color:var(--flat);}
+
+  .toolbar{display:flex; gap:8px; margin:4px 0 14px; flex-wrap:wrap;}
+  .btn{flex:1; background:var(--card2); border:1px solid var(--line); color:var(--text);
+    font-size:13px; font-weight:600; padding:10px 8px; border-radius:10px; text-align:center;}
+  .btn.gold{background:var(--gold); color:#1A1400; border-color:var(--gold);}
+  .btn:active{opacity:0.7;}
+
+  .section-label{font-size:12px; color:var(--gold); font-weight:700; margin:18px 2px 8px; letter-spacing:0.3px;}
+
+  .stock-card{background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:10px 12px; margin-bottom:8px;}
+  .stock-card .top-row{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .stock-card .sym{font-size:13px; font-weight:700;}
+  .stock-card .cname{display:block; font-size:10.5px; color:var(--muted); font-weight:400; margin-top:1px;}
+  .stock-card .chg{font-size:12.5px; font-weight:700; white-space:nowrap; text-align:right;}
+  .stock-card .stat-row{display:flex; flex-wrap:wrap; gap:0 14px; font-size:11px; color:var(--muted); margin-top:8px; padding-top:8px; border-top:1px solid var(--line);}
+  .stock-card .stat-row b{color:var(--text); font-weight:600;}
+  .stock-card.fail{color:var(--muted); font-size:12px;}
+  .stock-empty{text-align:center; color:var(--muted); padding:16px; background:var(--card); border:1px solid var(--line); border-radius:12px;}
+  .stock-card:active{background:var(--card2);}
+
+  .status-line{font-size:11.5px; color:var(--muted); margin:8px 2px 0; text-align:center;}
+  .loading-dot{display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--gold);
+    margin-right:6px; animation:pulse 1s infinite ease-in-out;}
+  @keyframes pulse{0%,100%{opacity:0.3;} 50%{opacity:1;}}
+
+  .sheet-backdrop{position:fixed; inset:0; background:rgba(0,0,0,0.55); display:none; z-index:20;}
+  .sheet{position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--line);
+    border-radius:16px 16px 0 0; padding:16px; max-height:80vh; overflow:auto; z-index:21; display:none;}
+  .sheet h2{margin:0 0 8px; font-size:15px;}
+  .sheet p{font-size:12px; color:var(--muted); line-height:1.5; margin:0 0 10px;}
+  .sheet textarea{width:100%; min-height:160px; background:var(--bg); color:var(--text); border:1px solid var(--line);
+    border-radius:10px; padding:10px; font-size:12.5px; font-family:inherit; resize:vertical;}
+  .sheet .row{display:flex; gap:8px; margin-top:10px;}
+
+  .err-box{background:#2A1416; border:1px solid #5A2226; color:#F3AEB2; font-size:12px; padding:10px 12px;
+    border-radius:10px; margin-bottom:12px; display:none;}
+
+  /* ── Nifty 50 Manual Entry full-screen view ── */
+  .fs-view{position:fixed; inset:0; background:var(--bg); z-index:30; display:none; flex-direction:column;}
+  .fs-header{position:sticky; top:0; z-index:1; background:rgba(15,17,21,0.96); backdrop-filter:blur(8px);
+    padding:14px 14px 10px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:10px;}
+  .fs-header .back{font-size:20px; padding:2px 6px;}
+  .fs-header h2{margin:0; font-size:16px; font-weight:600; flex:1;}
+  .fs-body{flex:1; overflow:auto; padding:12px 14px 40px; max-width:720px; margin:0 auto; width:100%;}
+  .n50-search{width:100%; background:var(--card); border:1px solid var(--line); color:var(--text);
+    font-size:13px; padding:10px 12px; border-radius:10px; margin-bottom:10px;}
+  .n50-item{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:11px 12px;
+    margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .n50-item:active{background:var(--card2);}
+  .n50-item .sym{font-size:13px; font-weight:700;}
+  .n50-item .cname{display:block; font-size:10.5px; color:var(--muted); font-weight:400; margin-top:1px;}
+  .n50-tag{font-size:10.5px; padding:3px 8px; border-radius:20px; white-space:nowrap;}
+  .n50-tag.saved{background:rgba(47,191,113,0.15); color:var(--up); border:1px solid rgba(47,191,113,0.3);}
+  .n50-tag.empty{background:rgba(138,143,152,0.12); color:var(--muted); border:1px solid var(--line);}
+
+  .n50-form-title{font-size:13px; color:var(--muted); margin:2px 2px 12px;}
+  .n50-group{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:12px;}
+  .n50-group .glabel{font-size:12px; color:var(--gold); font-weight:700; margin-bottom:6px;}
+  .n50-status{font-size:11.5px; color:var(--muted); margin:2px 2px 12px;}
+  .n50-hgrid{display:grid; grid-template-columns:1.2fr 1fr 1fr 1.3fr; gap:4px; padding:8px 2px; border-bottom:1px solid var(--line); font-size:12px; align-items:center;}
+  .n50-hgrid:last-child{border-bottom:none;}
+  .n50-hgrid.head{color:var(--muted); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px; border-bottom:1px solid var(--gold-dim);}
+  .n50-hgrid.avg{font-weight:700; border-top:1px solid var(--line); border-bottom:none; margin-top:2px; padding-top:10px;}
+  .n50-hgrid .d{color:var(--muted);}
+  .n50-hgrid .v{text-align:right;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>📈 Market Status — Nifty &amp; Sensex</h1>
+  <div class="sub" id="headerSub">🔴 Live — ஒவ்வொரு 5 Second-க்கும் Auto Update ஆகும்</div>
+</header>
+
+<main>
+  <div class="err-box" id="errBox"></div>
+
+  <div class="idx-row">
+    <div class="idx-card">
+      <div class="name">NIFTY 50</div>
+      <div class="price nums" id="niftyPrice">—</div>
+      <div class="delta nums" id="niftyDelta">—</div>
+      <div class="oc"><span>Open <b class="nums" id="niftyOpen">—</b></span><span>Prev Close <b class="nums" id="niftyPrevClose">—</b></span></div>
+      <div class="oc"><span>High <b class="nums" id="niftyHigh">—</b></span><span>Low <b class="nums" id="niftyLow">—</b></span></div>
+      <div class="oc"><span>Volume <b class="nums" id="niftyVolume">—</b></span><span>VWAP <b class="nums" id="niftyVwap">—</b></span></div>
+    </div>
+    <div class="idx-card">
+      <div class="name">BSE SENSEX</div>
+      <div class="price nums" id="sensexPrice">—</div>
+      <div class="delta nums" id="sensexDelta">—</div>
+      <div class="oc"><span>Open <b class="nums" id="sensexOpen">—</b></span><span>Prev Close <b class="nums" id="sensexPrevClose">—</b></span></div>
+      <div class="oc"><span>High <b class="nums" id="sensexHigh">—</b></span><span>Low <b class="nums" id="sensexLow">—</b></span></div>
+      <div class="oc"><span>Volume <b class="nums" id="sensexVolume">—</b></span><span>VWAP <b class="nums" id="sensexVwap">—</b></span></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="btn gold" id="refreshBtn">🔄 இப்போ Refresh பண்ணு</div>
+    <div class="btn" id="editListBtn">✏️ Stock List</div>
+    <div class="btn gold" id="n50EntryBtn">📊 Nifty 50 Entry</div>
+  </div>
+
+  <div class="status-line" id="statusLine"></div>
+  <div class="status-line" id="proxyBadge"></div>
+
+  <div class="section-label">NIFTY 50 STOCKS</div>
+  <div id="stockBody">
+    <div class="stock-empty">Loading…</div>
+  </div>
+</main>
+
+<div class="sheet-backdrop" id="sheetBackdrop"></div>
+<div class="sheet" id="editSheet">
+  <h2>✏️ Nifty 50 Stock List</h2>
+  <p>
+    ஒவ்வொரு Line-ல் ஒரு Stock: <b>NSE SYMBOL, Display Name</b> (Display Name Optional).
+    NSE, Rebalance பண்ணும்போது இந்த List Update பண்ணிக்கலாம். Symbol NSE-ஓட Official Trading Symbol-ஆ இருக்கணும் (எ.கா. RELIANCE, TCS, HDFCBANK).
+  </p>
+  <textarea id="listTextarea"></textarea>
+  <div class="row">
+    <div class="btn" id="cancelEditBtn">ரத்து</div>
+    <div class="btn gold" id="saveListBtn">Save பண்ணு</div>
+  </div>
+</div>
+
+<!-- ── Nifty 50 Manual Entry: List view (50 members) ── -->
+<div class="fs-view" id="n50ListView">
+  <div class="fs-header">
+    <span class="back" id="n50ListBack">←</span>
+    <h2>📊 Nifty 50 — 50 Members</h2>
+  </div>
+  <div class="fs-body">
+    <input type="text" class="n50-search" id="n50Search" placeholder="Symbol / Name Search பண்ணுங்க…">
+    <div class="n50-status" id="n50ListStatus"></div>
+    <div id="n50ListBody"></div>
+  </div>
+</div>
+
+<!-- ── Nifty 50 Manual Entry: Per-stock Auto-fetched Open/Close history ── -->
+<div class="fs-view" id="n50FormView">
+  <div class="fs-header">
+    <span class="back" id="n50FormBack">←</span>
+    <h2 id="n50FormTitle">Stock</h2>
+    <span class="back" id="n50FormRefreshBtn" title="Refresh">🔄</span>
+  </div>
+  <div class="fs-body">
+    <div class="n50-form-title" id="n50FormSub"></div>
+    <div class="n50-status" id="n50FormStatus"></div>
+
+    <div class="n50-group">
+      <div class="glabel">கடைசி 7 நாட்கள் — Opening / Closing / Up-Down</div>
+      <div id="n50Hist7"></div>
+    </div>
+
+    <div class="n50-group">
+      <div class="glabel">கடைசி 3 நாட்கள் — Opening / Closing / Up-Down</div>
+      <div id="n50Hist3"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ── Default Nifty 50 constituents (as of Sep 2026, sourced from NSE-tracking
+  // data). NSE rebalances this index twice a year (Jan 31 / Jul 31 cut-off) —
+  // use "✏️ Stock List" below to add/remove/rename any symbol yourself
+  // whenever a rebalance happens; no code change needed.
+  // Fixed 04 Sep 2026: list only had 49 names (NESTLEIND/Nestle India was
+  // missing entirely) and TATAMOTORS no longer resolves on Yahoo Finance
+  // after Tata Motors demerged into separate PV/CV listings — the passenger
+  // vehicle entity's symbol is now TMPV.
+  const DEFAULT_STOCKS = [
+    ["RELIANCE","Reliance Industries"],["BHARTIARTL","Bharti Airtel"],["HDFCBANK","HDFC Bank"],
+    ["ICICIBANK","ICICI Bank"],["SBIN","State Bank of India"],["TCS","Tata Consultancy Services"],
+    ["BAJFINANCE","Bajaj Finance"],["LT","Larsen & Toubro"],["HINDUNILVR","Hindustan Unilever"],
+    ["SUNPHARMA","Sun Pharma"],["INFY","Infosys"],["TITAN","Titan Company"],
+    ["KOTAKBANK","Kotak Mahindra Bank"],["MARUTI","Maruti Suzuki"],["M&M","Mahindra & Mahindra"],
+    ["ADANIENT","Adani Enterprises"],["AXISBANK","Axis Bank"],["ADANIPORTS","Adani Ports"],
+    ["HCLTECH","HCL Technologies"],["ULTRACEMCO","UltraTech Cement"],["BAJAJ-AUTO","Bajaj Auto"],
+    ["ITC","ITC"],["NTPC","NTPC"],["JSWSTEEL","JSW Steel"],
+    ["BAJAJFINSV","Bajaj Finserv"],["ETERNAL","Eternal (Zomato)"],["ONGC","Oil & Natural Gas Corp"],
+    ["BEL","Bharat Electronics"],["COALINDIA","Coal India"],["POWERGRID","Power Grid Corp"],
+    ["SHRIRAMFIN","Shriram Finance"],["ASIANPAINT","Asian Paints"],["TATASTEEL","Tata Steel"],
+    ["HINDALCO","Hindalco Industries"],["GRASIM","Grasim Industries"],["EICHERMOT","Eicher Motors"],
+    ["INDIGO","InterGlobe Aviation"],["WIPRO","Wipro"],["SBILIFE","SBI Life Insurance"],
+    ["TECHM","Tech Mahindra"],["JIOFIN","Jio Financial Services"],["TRENT","Trent"],
+    ["APOLLOHOSP","Apollo Hospitals"],["HDFCLIFE","HDFC Life Insurance"],["TMPV","Tata Motors (PV)"],
+    ["CIPLA","Cipla"],["TATACONSUM","Tata Consumer Products"],["DRREDDY","Dr Reddy's Labs"],
+    ["MAXHEALTH","Max Healthcare"],["NESTLEIND","Nestle India"]
+  ];
+
+  const LS_LIST_KEY = "marketStatus_stockList_v1";
+  const LS_CACHE_KEY = "marketStatus_cache_v2"; // bumped: v2 adds Day High/Low, Volume, VWAP
+
+  const $ = id => document.getElementById(id);
+
+  function loadStockList(){
+    try{
+      const raw = localStorage.getItem(LS_LIST_KEY);
+      if(raw){
+        const parsed = JSON.parse(raw);
+        if(Array.isArray(parsed) && parsed.length) return parsed;
+      }
+    }catch(e){}
+    return DEFAULT_STOCKS;
+  }
+  function saveStockList(list){
+    try{ localStorage.setItem(LS_LIST_KEY, JSON.stringify(list)); }catch(e){}
+  }
+  function listToTextarea(list){
+    return list.map(([sym,name]) => name ? `${sym}, ${name}` : sym).join("\n");
+  }
+  function textareaToList(text){
+    return text.split("\n").map(l => l.trim()).filter(Boolean).map(line => {
+      const parts = line.split(",");
+      const sym = parts[0].trim().toUpperCase();
+      const name = parts.slice(1).join(",").trim();
+      return [sym, name || sym];
+    });
+  }
+
+  let stockList = loadStockList();
+
+  // ── Data fetch: Yahoo Finance's public chart/quote endpoints have no
+  // official CORS allowance for arbitrary browser origins, so requests go
+  // through free public CORS relays. This is an UNOFFICIAL, best-effort data
+  // path — all relays are raced IN PARALLEL (not one-by-one) so a dead relay
+  // can't add its own delay on top of the others; whichever responds first
+  // with valid data wins. If every relay fails, cached data (last successful
+  // fetch) stays on screen with a clear "Update ஆகல" note instead of blank
+  // fields. For anything decision-critical, always cross-check the official
+  // NSE/BSE site.
+  // Local proxy (see market-proxy-server.js, run via Termux like STFFE's
+  // bd-proxy-server.js) — fetches Yahoo server-side, so no browser CORS
+  // restriction and no dependency on public proxy sites that some mobile
+  // networks block. Tried FIRST in the parallel race below; if it isn't
+  // running, it fails almost instantly and the public proxies take over
+  // with no extra delay.
+  const PROXIES = [
+    url => `http://127.0.0.1:8091/proxy?url=${encodeURIComponent(url)}`,
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+    url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`
+  ];
+  const PROXY_TIMEOUT_MS = 9000;
+
+  // Once the local proxy (index 0) has answered successfully, every later
+  // request uses ONLY it instead of racing all 4 in parallel — this cuts
+  // real Yahoo-bound traffic to a quarter (was: every symbol hit Yahoo via
+  // all 4 relays simultaneously, win-or-lose, every single fetch). That
+  // 4x reduction is what makes a fast Live-Update interval sustainable
+  // without tripping Yahoo's rate-limit. Self-heals: if the local-only
+  // request ever fails (proxy died in the background), it's marked down
+  // and that one request automatically retries via the full 4-way race.
+  let localProxyActive = false;
+
+  // fetch() alone can hang indefinitely if a proxy accepts the connection but
+  // never responds — this wraps it with AbortController so a stuck relay is
+  // abandoned after PROXY_TIMEOUT_MS instead of blocking forever.
+  function fetchWithTimeout(url, ms){
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    return fetch(url, { cache: "no-store", signal: controller.signal }).finally(() => clearTimeout(timer));
+  }
+
+  // Fires ALL proxies at once for one target URL and resolves with the FIRST
+  // one that returns valid JSON — total wait is ~PROXY_TIMEOUT_MS even when
+  // every relay is down, instead of PROXY_TIMEOUT_MS × number-of-relays (the
+  // old sequential try-one-then-next design, which is what made 51 symbols
+  // take many minutes whenever a relay was unreachable).
+  function fetchViaProxiesParallel(yahooUrl, timeoutMs){
+    // Local-only mode once we know it's up (see localProxyActive above);
+    // otherwise race all 4 (local + 3 public) same as before.
+    const localOnly = localProxyActive;
+    const proxyList = localOnly ? [PROXIES[0]] : PROXIES;
+    const tasks = proxyList.map((build, i) =>
+      fetchWithTimeout(build(yahooUrl), timeoutMs).then(res => {
+        if(!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      }).then(json => ({ json, viaLocal: i === 0 }))
+    );
+    return new Promise(resolve => {
+      let remaining = tasks.length;
+      let settled = false;
+      tasks.forEach(p => {
+        p.then(({json, viaLocal}) => {
+          if(!settled){
+            settled = true;
+            if(viaLocal) localProxyActive = true;
+            resolve(json);
+          }
+        }).catch(() => {
+          remaining--;
+          if(remaining === 0 && !settled){
+            if(localOnly){
+              // Local proxy just failed — mark it down and retry this one
+              // request via the full 4-way race instead of giving up.
+              localProxyActive = false;
+              fetchViaProxiesParallel(yahooUrl, timeoutMs).then(resolve);
+            }else{
+              resolve(null);
+            }
+          }
+        });
+      });
+    });
+  }
+
+  async function fetchQuote(symbol){
+    // interval=5m/range=1d gives today's intraday candles in the SAME call —
+    // this lets us compute VWAP (Volume Weighted Avg Price) locally without
+    // any extra proxy request per symbol, alongside meta's Day High/Low/Volume.
+    // Used only for the 2 index cards (NIFTY/SENSEX) — the 50-stock list uses
+    // the batched quote endpoint below instead, to keep it fast and reliable.
+    // `symbol` arrives already encoded by the caller (either the literal
+    // "%5ENSEI"/"%5EBSESN" for the indices, or encodeURIComponent(sym)+".NS"
+    // for stocks) — encoding it again here double-escaped the "%" itself,
+    // which silently broke EVERY request for the two index cards and any
+    // stock symbol containing a special character (e.g. M&M). Do not wrap
+    // `symbol` in encodeURIComponent() again.
+    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=5m&range=1d&includePrePost=false`;
+    try{
+      const json = await fetchViaProxiesParallel(yahooUrl, PROXY_TIMEOUT_MS);
+      if(!json) return { ok:false };
+      const result = json.chart && json.chart.result && json.chart.result[0];
+      if(!result) return { ok:false };
+      const meta = result.meta || {};
+      const quote = (result.indicators && result.indicators.quote && result.indicators.quote[0]) || {};
+      const opens = (quote.open || []).filter(v => v !== null && v !== undefined);
+      const closes = (quote.close || []).filter(v => v !== null && v !== undefined);
+      const todayOpen = (typeof meta.regularMarketOpen === "number") ? meta.regularMarketOpen
+        : (opens.length ? opens[0] : null);
+      const ltp = (typeof meta.regularMarketPrice === "number") ? meta.regularMarketPrice
+        : (closes.length ? closes[closes.length - 1] : null);
+      const prevClose = (typeof meta.chartPreviousClose === "number") ? meta.chartPreviousClose
+        : (typeof meta.previousClose === "number") ? meta.previousClose
+        : null;
+      const dayHigh = (typeof meta.regularMarketDayHigh === "number") ? meta.regularMarketDayHigh : null;
+      const dayLow = (typeof meta.regularMarketDayLow === "number") ? meta.regularMarketDayLow : null;
+      const volume = (typeof meta.regularMarketVolume === "number") ? meta.regularMarketVolume : null;
+
+      // VWAP = Σ(Typical Price × Candle Volume) / Σ(Candle Volume), built
+      // from every valid 5-min candle received today (standard intraday
+      // VWAP formula; Typical Price = (High+Low+Close)/3 per candle).
+      let vwap = null;
+      const highs = quote.high || [], lows = quote.low || [], closesArr = quote.close || [], vols = quote.volume || [];
+      let sumPV = 0, sumV = 0;
+      for(let i=0;i<closesArr.length;i++){
+        const h = highs[i], l = lows[i], c = closesArr[i], v = vols[i];
+        if(h==null || l==null || c==null || v==null || v<=0) continue;
+        const typical = (h+l+c)/3;
+        sumPV += typical*v; sumV += v;
+      }
+      if(sumV > 0) vwap = sumPV/sumV;
+
+      if(ltp === null) return { ok:false };
+      return { open: todayOpen, ltp, prevClose, dayHigh, dayLow, volume, vwap, ok: true };
+    }catch(e){
+      return { ok:false };
+    }
+  }
+
+  // Yahoo's v7/finance/quote (used for batching) now requires a
+  // login cookie/crumb and returns HTTP 429 without one — confirmed broken
+  // for anonymous access as of Sep 2026. v8/finance/chart (used by
+  // fetchQuote above) does NOT require auth and works fine, so all 50
+  // stocks are fetched via fetchQuote too — but with LIMITED CONCURRENCY
+  // (several at once, not all 50 simultaneously and not one-by-one) so it's
+  // both fast and gentle on Yahoo's per-IP limits. Now that the local proxy
+  // removes the public-relay reliability problem, this easily finishes in
+  // well under 30 seconds.
+  async function fetchInChunks(items, worker, concurrency){
+    const results = new Array(items.length);
+    let idx = 0;
+    async function runner(){
+      while(idx < items.length){
+        const i = idx++;
+        results[i] = await worker(items[i], i);
+      }
+    }
+    const runners = Array.from({ length: Math.min(concurrency, items.length) }, runner);
+    await Promise.all(runners);
+    return results;
+  }
+
+
+  function fmt(n){
+    if(n === null || n === undefined || isNaN(n)) return "—";
+    return n.toLocaleString("en-IN", { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  }
+  function fmtVol(n){
+    if(n === null || n === undefined || isNaN(n)) return "—";
+    if(n >= 1e7) return (n/1e7).toFixed(2) + "Cr";
+    if(n >= 1e5) return (n/1e5).toFixed(2) + "L";
+    if(n >= 1e3) return (n/1e3).toFixed(1) + "K";
+    return String(n);
+  }
+  function deltaClass(change){
+    if(change > 0) return "up"; if(change < 0) return "down"; return "flat";
+  }
+  function arrow(change){
+    if(change > 0) return "▲"; if(change < 0) return "▼"; return "•";
+  }
+
+  function renderIndex(prefix, data){
+    if(!data || !data.ok){
+      $(prefix + "Price").textContent = "—"; $(prefix + "Price").className = "price nums";
+      $(prefix + "Delta").textContent = "Update ஆகல (Network/Proxy Issue)";
+      $(prefix + "Delta").className = "delta nums flat";
+      return;
+    }
+    const change = (data.ltp !== null && data.prevClose !== null) ? (data.ltp - data.prevClose) : null;
+    const pct = (change !== null && data.prevClose) ? (change / data.prevClose * 100) : null;
+    $(prefix + "Price").textContent = fmt(data.ltp);
+    $(prefix + "Open").textContent = fmt(data.open);
+    $(prefix + "PrevClose").textContent = fmt(data.prevClose);
+    $(prefix + "High").textContent = fmt(data.dayHigh);
+    $(prefix + "Low").textContent = fmt(data.dayLow);
+    $(prefix + "Volume").textContent = fmtVol(data.volume);
+    $(prefix + "Vwap").textContent = fmt(data.vwap);
+    const cls = deltaClass(change || 0);
+    $(prefix + "Delta").className = "delta nums " + cls;
+    $(prefix + "Delta").textContent = change === null ? "—" :
+      `${arrow(change)} ${fmt(Math.abs(change))} (${pct === null ? "—" : (pct>=0?"+":"") + pct.toFixed(2) + "%"})`;
+  }
+
+  function renderStocks(rows){
+    const container = $("stockBody");
+    if(!rows.length){
+      container.innerHTML = `<div class="stock-empty">Stock List காலியா இருக்கு — ✏️ Stock List-ல Add பண்ணுங்க.</div>`;
+      return;
+    }
+    container.innerHTML = rows.map(r => {
+      if(!r.data || !r.data.ok){
+        return `<div class="stock-card fail">
+          <div class="top-row"><span><span class="sym">${r.sym}</span><span class="cname">${r.name}</span></span><span>Fetch ஆகல</span></div>
+        </div>`;
+      }
+      const d = r.data;
+      const change = (d.ltp !== null && d.prevClose !== null) ? (d.ltp - d.prevClose) : null;
+      const pct = (change !== null && d.prevClose) ? (change / d.prevClose * 100) : null;
+      const cls = deltaClass(change || 0);
+      const chgText = change === null ? "—" : `${arrow(change)} ${fmt(Math.abs(change))}${pct===null?"":` (${pct>=0?"+":""}${pct.toFixed(2)}%)`}`;
+      return `<div class="stock-card">
+        <div class="top-row">
+          <span><span class="sym">${r.sym}</span><span class="cname">${r.name}</span></span>
+          <span class="chg nums ${cls}">${chgText}</span>
+        </div>
+        <div class="stat-row nums">
+          <span>Open <b>${fmt(d.open)}</b></span>
+          <span>High <b>${fmt(d.dayHigh)}</b></span>
+          <span>Low <b>${fmt(d.dayLow)}</b></span>
+          <span>LTP <b>${fmt(d.ltp)}</b></span>
+        </div>
+        <div class="stat-row nums">
+          <span>Volume <b>${fmtVol(d.volume)}</b></span>
+          <span>VWAP <b>${fmt(d.vwap)}</b></span>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function todayKey(){
+    const d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate();
+  }
+
+  function loadCache(){
+    try{
+      const raw = localStorage.getItem(LS_CACHE_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return null;
+  }
+  function saveCache(payload){
+    try{ localStorage.setItem(LS_CACHE_KEY, JSON.stringify(payload)); }catch(e){}
+  }
+
+  function showFromCache(cache){
+    if(!cache) return;
+    renderIndex("nifty", cache.nifty);
+    renderIndex("sensex", cache.sensex);
+    renderStocks(cache.stocks || []);
+    $("statusLine").textContent = "Last Update: " + (cache.time || "—") + " (Cached)";
+  }
+
+  let isFetching = false;
+  let lastFetchAt = 0;
+  async function fetchAll(){
+    if(isFetching) return;
+    isFetching = true;
+    lastFetchAt = Date.now();
+    $("errBox").style.display = "none";
+    $("statusLine").innerHTML = `<span class="loading-dot"></span>Indices Fetch ஆகுது…`;
+    $("refreshBtn").textContent = "⏳ Fetch ஆகுது…";
+
+    let anyFail = false;
+
+    const [niftyData, sensexData] = await Promise.all([
+      fetchQuote("%5ENSEI"),
+      fetchQuote("%5EBSESN")
+    ]);
+    renderIndex("nifty", niftyData);
+    renderIndex("sensex", sensexData);
+    if(!niftyData.ok || !sensexData.ok) anyFail = true;
+
+    // 50 stocks fetched via the same reliable v8/chart endpoint as the
+    // indices, 6 at a time in parallel (see fetchInChunks) — fast because
+    // several run at once, but gentle enough on Yahoo not to trigger limits.
+    $("statusLine").innerHTML = `<span class="loading-dot"></span>${stockList.length} Stocks Fetch ஆகுது…`;
+    const stockRows = await fetchInChunks(stockList, async ([sym, name]) => {
+      const data = await fetchQuote(encodeURIComponent(sym) + ".NS");
+      if(!data.ok) anyFail = true;
+      return { sym, name, data };
+    }, 6);
+    renderStocks(stockRows);
+
+    const nowStr = new Date().toLocaleString("en-IN", { hour:"2-digit", minute:"2-digit", day:"2-digit", month:"short" });
+    $("statusLine").textContent = "Last Update: " + nowStr;
+    $("refreshBtn").textContent = "🔄 இப்போ Refresh பண்ணு";
+
+    if(anyFail){
+      $("errBox").style.display = "block";
+      $("errBox").textContent = "⚠️ சில Symbol-க்கு Data கிடைக்கல் (Free Data Source Rate-Limit/Network Issue ஆகி இருக்கலாம்). 🔄 Refresh பண்ணி பாருங்க. Critical முடிவுகளுக்கு Official NSE/BSE Site-ஐ Cross-check பண்ணுங்க.";
+    }
+
+    saveCache({ nifty: niftyData, sensex: sensexData, stocks: stockRows, time: nowStr, dateKey: todayKey() });
+    isFetching = false;
+  }
+
+  // ── Local proxy detection: pings market-proxy-server.js (if running via
+  // Termux) and shows a small badge so you can see at a glance which data
+  // path is active — helps debug without guessing. Re-checked every 20s
+  // (not just once at page load) so the badge — and localProxyActive,
+  // which fetchViaProxiesParallel above relies on — never goes stale if
+  // the Termux proxy dies or comes back mid-session.
+  async function checkLocalProxy(){
+    try{
+      const res = await fetchWithTimeout("http://127.0.0.1:8091/ping", 2000);
+      if(res.ok){
+        localProxyActive = true;
+        $("proxyBadge").textContent = "⚡ Local Proxy Active (Fast & Reliable)";
+        $("proxyBadge").style.color = "var(--up)";
+        return;
+      }
+    }catch(e){}
+    localProxyActive = false;
+    $("proxyBadge").textContent = "🌐 Public Proxy Mode (Local Proxy Run ஆகல)";
+    $("proxyBadge").style.color = "var(--muted)";
+  }
+  checkLocalProxy();
+  setInterval(checkLocalProxy, 20000);
+
+  // ── Auto-run once per day: on open, show cached data instantly (no blank
+  // screen/wait), then fetch fresh data automatically if today's data isn't
+  // cached yet OR the person taps Refresh.
+  const cache = loadCache();
+  if(cache) showFromCache(cache);
+  if(!cache || cache.dateKey !== todayKey()){
+    fetchAll();
+  }
+
+  $("refreshBtn").addEventListener("click", fetchAll);
+
+  // ── Live auto-refresh: fetch fresh data every LIVE_INTERVAL_MS on its own,
+  // no tap needed — "live-live" updating while the app stays open. Paused
+  // whenever the tab/app is backgrounded (saves battery + mobile data, and
+  // avoids piling up requests nobody is watching) and resumed — with an
+  // immediate catch-up fetch if enough time has passed — the moment it
+  // becomes visible again (screen unlocked, tab switched back to, etc).
+  // EXPERIMENTAL — 5s (12 rounds/min x 52 symbols = 624 Yahoo requests/min
+  // via the local proxy). Untested at sustained rate; if "Fetch ஆகல" starts
+  // showing up often, Yahoo's free-tier rate limit is being hit — dial this
+  // back to 15000 (15s, the last confirmed-safe value) or higher.
+  const LIVE_INTERVAL_MS = 5000; // 5 seconds (experimental, see note above)
+  let liveTimer = null;
+
+  function startLiveUpdates(){
+    if(liveTimer) return;
+    liveTimer = setInterval(fetchAll, LIVE_INTERVAL_MS);
+  }
+  function stopLiveUpdates(){
+    if(liveTimer){ clearInterval(liveTimer); liveTimer = null; }
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if(document.hidden){
+      stopLiveUpdates();
+    }else{
+      if(Date.now() - lastFetchAt > LIVE_INTERVAL_MS) fetchAll();
+      startLiveUpdates();
+    }
+  });
+
+  if(!document.hidden) startLiveUpdates();
+
+  // ── Edit Stock List sheet
+  function openSheet(){
+    $("listTextarea").value = listToTextarea(stockList);
+    $("sheetBackdrop").style.display = "block";
+    $("editSheet").style.display = "block";
+  }
+  function closeSheet(){
+    $("sheetBackdrop").style.display = "none";
+    $("editSheet").style.display = "none";
+  }
+  $("editListBtn").addEventListener("click", openSheet);
+  $("cancelEditBtn").addEventListener("click", closeSheet);
+  $("sheetBackdrop").addEventListener("click", closeSheet);
+  $("saveListBtn").addEventListener("click", () => {
+    const newList = textareaToList($("listTextarea").value);
+    stockList = newList.length ? newList : DEFAULT_STOCKS;
+    saveStockList(stockList);
+    closeSheet();
+    fetchAll();
+  });
+
+  // ── Nifty 50 Entry: per-stock LAST 7 DAYS + LAST 3 DAYS daily
+  // Open/Close/Up-Down history, fetched AUTOMATICALLY from the same Yahoo
+  // Finance daily-candle data (no manual typing) with an Average Up/Down
+  // summary row, cached locally per symbol/day so re-opening is instant.
+  const LS_N50_HIST_KEY = "marketStatus_n50Hist_v1";
+
+  function loadN50Hist(){
+    try{
+      const raw = localStorage.getItem(LS_N50_HIST_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return {};
+  }
+  function saveN50Hist(obj){
+    try{ localStorage.setItem(LS_N50_HIST_KEY, JSON.stringify(obj)); }catch(e){}
+  }
+  let n50Hist = loadN50Hist();
+  let n50ActiveSym = null; // symbol currently open in the history view
+
+  function n50HasData(sym){
+    const e = n50Hist[sym];
+    return !!(e && e.days && e.days.length);
+  }
+
+  // Daily OHLC history via Yahoo's chart endpoint (interval=1d, range=1mo —
+  // 1mo comfortably covers the last 7 trading days even across
+  // weekends/holidays); reuses the same CORS proxies as the live quotes.
+  async function fetchDailyHistory(symbol){
+    // Same double-encoding fix as fetchQuote() above — `symbol` is already
+    // encoded by the caller (encodeURIComponent(sym)+".NS"), so it must NOT
+    // be passed through encodeURIComponent() a second time here.
+    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1mo`;
+    try{
+      const json = await fetchViaProxiesParallel(yahooUrl, PROXY_TIMEOUT_MS);
+      if(!json) return { ok:false };
+      const result = json.chart && json.chart.result && json.chart.result[0];
+      if(!result) return { ok:false };
+      const ts = result.timestamp || [];
+      const quote = (result.indicators && result.indicators.quote && result.indicators.quote[0]) || {};
+      const opens = quote.open || [], closes = quote.close || [];
+      const days = [];
+      for(let i=0;i<ts.length;i++){
+        if(opens[i] == null || closes[i] == null) continue;
+        const dt = new Date(ts[i]*1000);
+        days.push({ date: dt.toLocaleDateString("en-IN", { day:"2-digit", month:"short" }), open: opens[i], close: closes[i] });
+      }
+      if(!days.length) return { ok:false };
+      return { ok:true, days };
+    }catch(e){
+      return { ok:false };
+    }
+  }
+
+  function dayChangeInfo(d){
+    if(d.open == null || d.close == null) return { cls:"flat", arrow:"•", pct:null };
+    const chg = d.close - d.open;
+    const pct = d.open ? (chg/d.open*100) : null;
+    const cls = chg>0 ? "up" : chg<0 ? "down" : "flat";
+    const arrow = chg>0 ? "▲" : chg<0 ? "▼" : "•";
+    return { cls, arrow, pct };
+  }
+
+  // Builds the day-by-day rows PLUS a final "Average" row summarising how
+  // many days closed Up vs Down and the average % move across the period.
+  function renderHistRows(days){
+    let upCount=0, downCount=0, pctSum=0, pctN=0;
+    const rowsHtml = days.map(d => {
+      const info = dayChangeInfo(d);
+      if(info.cls === "up") upCount++; else if(info.cls === "down") downCount++;
+      if(info.pct !== null){ pctSum += info.pct; pctN++; }
+      const pctText = info.pct === null ? "—" : `${info.pct>=0?"+":""}${info.pct.toFixed(2)}%`;
+      return `<div class="n50-hgrid">
+        <span class="d">${d.date}</span>
+        <span class="v nums">${fmt(d.open)}</span>
+        <span class="v nums">${fmt(d.close)}</span>
+        <span class="v nums ${info.cls}">${info.arrow} ${pctText}</span>
+      </div>`;
+    }).join("");
+    const avgPct = pctN ? (pctSum/pctN) : null;
+    const trendCls = upCount>downCount ? "up" : downCount>upCount ? "down" : "flat";
+    const trendArrow = upCount>downCount ? "▲" : downCount>upCount ? "▼" : "•";
+    const avgRow = `<div class="n50-hgrid avg">
+      <span class="d">சராசரி (Average)</span>
+      <span class="v nums">${upCount} Up</span>
+      <span class="v nums">${downCount} Down</span>
+      <span class="v nums ${trendCls}">${trendArrow} ${avgPct===null?"—":(avgPct>=0?"+":"")+avgPct.toFixed(2)+"%"}</span>
+    </div>`;
+    const head = `<div class="n50-hgrid head"><span>Date</span><span>Open</span><span>Close</span><span>Up/Down</span></div>`;
+    return head + rowsHtml + avgRow;
+  }
+
+  function renderN50FormData(days){
+    $("n50Hist7").innerHTML = renderHistRows(days.slice(-7));
+    $("n50Hist3").innerHTML = renderHistRows(days.slice(-3));
+  }
+
+  // Shared fetch+cache step (no form-view DOM touched) — used by both the
+  // single-stock form (fetchAndRenderN50) and the bulk auto-fetch-all below.
+  async function fetchAndCacheN50(sym){
+    const res = await fetchDailyHistory(encodeURIComponent(sym) + ".NS");
+    if(res.ok){
+      n50Hist[sym] = { days: res.days, time: new Date().toLocaleString("en-IN", { hour:"2-digit", minute:"2-digit", day:"2-digit", month:"short" }), dateKey: todayKey() };
+      saveN50Hist(n50Hist);
+    }
+    return res.ok;
+  }
+
+  async function fetchAndRenderN50(sym){
+    $("n50FormStatus").innerHTML = `<span class="loading-dot"></span>Data Automatic-ஆ Fetch ஆகுது…`;
+    const ok = await fetchAndCacheN50(sym);
+    if(ok){
+      renderN50FormData(n50Hist[sym].days);
+      $("n50FormStatus").textContent = "Last Update: " + n50Hist[sym].time + " (Automatic)";
+    }else{
+      $("n50FormStatus").textContent = "⚠️ Data கிடைக்கல் (Network/Proxy Issue). 🔄 Refresh பண்ணி பாருங்க.";
+      if(!n50HasData(sym)){
+        $("n50Hist7").innerHTML = `<div class="stock-empty">Data கிடைக்கல்.</div>`;
+        $("n50Hist3").innerHTML = "";
+      }
+    }
+  }
+
+  // ── Auto-fetch ALL 50 stocks' history the moment the Nifty 50 Entry list
+  // is opened — no more tapping into each stock one by one. Skips symbols
+  // already cached for today; runs 6-at-a-time (same pattern as the main
+  // stock list) so it's fast without hammering the local proxy/Yahoo.
+  let n50BulkRunning = false;
+  async function fetchAllN50History(){
+    if(n50BulkRunning) return;
+    n50BulkRunning = true;
+    const todayStr = todayKey();
+    const pending = stockList.filter(([sym]) => {
+      const c = n50Hist[sym];
+      return !(c && c.days && c.days.length && c.dateKey === todayStr);
+    });
+    if(!pending.length){
+      $("n50ListStatus").textContent = "";
+      n50BulkRunning = false;
+      return;
+    }
+    let done = 0;
+    const total = pending.length;
+    $("n50ListStatus").innerHTML = `<span class="loading-dot"></span>${total} Stocks Auto Fetch ஆகுது… (0/${total})`;
+    await fetchInChunks(pending, async ([sym]) => {
+      await fetchAndCacheN50(sym);
+      done++;
+      $("n50ListStatus").innerHTML = `<span class="loading-dot"></span>${total} Stocks Auto Fetch ஆகுது… (${done}/${total})`;
+      renderN50List($("n50Search").value); // progressively flip tags to ✓ Fetched
+    }, 6);
+    $("n50ListStatus").textContent = "";
+    n50BulkRunning = false;
+  }
+
+  function renderN50List(filterText){
+    const body = $("n50ListBody");
+    const q = (filterText || "").trim().toUpperCase();
+    const rows = stockList.filter(([sym, name]) => !q || sym.toUpperCase().includes(q) || (name||"").toUpperCase().includes(q));
+    if(!rows.length){
+      body.innerHTML = `<div class="stock-empty">Match ஆகல.</div>`;
+      return;
+    }
+    body.innerHTML = rows.map(([sym, name]) => {
+      const has = n50HasData(sym);
+      return `<div class="n50-item" data-sym="${sym}">
+        <span><span class="sym">${sym}</span><span class="cname">${name}</span></span>
+        <span class="n50-tag ${has ? "saved" : "empty"}">${has ? "✓ Fetched" : "Tap பண்ணுங்க"}</span>
+      </div>`;
+    }).join("");
+    body.querySelectorAll(".n50-item").forEach(el => {
+      el.addEventListener("click", () => openN50Form(el.getAttribute("data-sym")));
+    });
+  }
+
+  function openN50List(){
+    renderN50List($("n50Search").value);
+    $("n50ListView").style.display = "flex";
+    fetchAllN50History(); // auto-fetch every stock not already cached today, no tap needed
+  }
+  function closeN50List(){
+    $("n50ListView").style.display = "none";
+  }
+
+  async function openN50Form(sym){
+    n50ActiveSym = sym;
+    const stockRow = stockList.find(([s]) => s === sym);
+    const name = stockRow ? stockRow[1] : sym;
+    $("n50FormTitle").textContent = sym;
+    $("n50FormSub").textContent = name;
+    $("n50ListView").style.display = "none";
+    $("n50FormView").style.display = "flex";
+
+    const cached = n50Hist[sym];
+    if(cached && cached.days && cached.days.length){
+      renderN50FormData(cached.days);
+      $("n50FormStatus").textContent = "Last Update: " + cached.time + (cached.dateKey === todayKey() ? " (Automatic)" : " (Cached — Update ஆகுது…)");
+    }else{
+      $("n50Hist7").innerHTML = `<div class="stock-empty">Fetch ஆகுது…</div>`;
+      $("n50Hist3").innerHTML = "";
+      $("n50FormStatus").innerHTML = `<span class="loading-dot"></span>Data Automatic-ஆ Fetch ஆகுது…`;
+    }
+    if(!cached || cached.dateKey !== todayKey()){
+      await fetchAndRenderN50(sym);
+    }
+  }
+  function closeN50Form(){
+    $("n50FormView").style.display = "none";
+    $("n50ListView").style.display = "flex";
+    renderN50List($("n50Search").value); // refresh Fetched/Tap tags
+  }
+
+  $("n50EntryBtn").addEventListener("click", openN50List);
+  $("n50ListBack").addEventListener("click", closeN50List);
+  $("n50FormBack").addEventListener("click", closeN50Form);
+  $("n50Search").addEventListener("input", () => renderN50List($("n50Search").value));
+  $("n50FormRefreshBtn").addEventListener("click", () => { if(n50ActiveSym) fetchAndRenderN50(n50ActiveSym); });
+
+  // ── PWA install support: register the app-shell service worker so this
+  // opens instantly (and installs as a Home Screen icon) even offline.
+  if("serviceWorker" in navigator){
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw-v2.js").catch(() => {});
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
