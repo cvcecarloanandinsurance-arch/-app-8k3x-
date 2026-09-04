@@ -115,6 +115,15 @@
   .n50-hgrid.avg{font-weight:700; border-top:1px solid var(--line); border-bottom:none; margin-top:2px; padding-top:10px;}
   .n50-hgrid .d{color:var(--muted);}
   .n50-hgrid .v{text-align:right;}
+
+  /* ── Buy/Sell Signal (SMA + RSI technical indicator) ── */
+  .signal-disclaimer{font-size:10.5px; color:var(--muted); line-height:1.5; margin:0 2px 10px;}
+  .stock-card .signal-row{align-items:center; gap:8px;}
+  .signal-badge{font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; white-space:nowrap;}
+  .signal-badge.up{background:rgba(47,191,113,0.15); color:var(--up); border:1px solid rgba(47,191,113,0.3);}
+  .signal-badge.down{background:rgba(229,72,77,0.15); color:var(--down); border:1px solid rgba(229,72,77,0.3);}
+  .signal-badge.flat{background:rgba(138,143,152,0.12); color:var(--muted); border:1px solid var(--line);}
+  .sig-reason{color:var(--muted); font-size:10.5px;}
 </style>
 </head>
 <body>
@@ -150,12 +159,15 @@
     <div class="btn gold" id="refreshBtn">🔄 இப்போ Refresh பண்ணு</div>
     <div class="btn" id="editListBtn">✏️ Stock List</div>
     <div class="btn gold" id="n50EntryBtn">📊 Nifty 50 Entry</div>
+    <div class="btn" id="signalRefreshBtn">🎯 Signal Refresh</div>
   </div>
 
   <div class="status-line" id="statusLine"></div>
   <div class="status-line" id="proxyBadge"></div>
+  <div class="status-line" id="signalStatus"></div>
 
   <div class="section-label">NIFTY 50 STOCKS</div>
+  <div class="signal-disclaimer">⚠️ 🟢 BUY / 🔴 SELL / 🟡 HOLD — SMA(5 vs 20 நாள்) &amp; RSI(14) Technical Indicator வெச்சு தானாக கணக்கிடப்பட்டது. இது Investment Advice இல்ல, Reference-க்கு மட்டும் — முடிவு எடுக்குறதுக்கு முன்ன உங்க சொந்த ஆராய்ச்சி பாருங்க.</div>
   <div id="stockBody">
     <div class="stock-empty">Loading…</div>
   </div>
@@ -478,7 +490,10 @@
       `${arrow(change)} ${fmt(Math.abs(change))} (${pct === null ? "—" : (pct>=0?"+":"") + pct.toFixed(2) + "%"})`;
   }
 
+  let lastStockRows = [];
+
   function renderStocks(rows){
+    lastStockRows = rows;
     const container = $("stockBody");
     if(!rows.length){
       container.innerHTML = `<div class="stock-empty">Stock List காலியா இருக்கு — ✏️ Stock List-ல Add பண்ணுங்க.</div>`;
@@ -495,6 +510,23 @@
       const pct = (change !== null && d.prevClose) ? (change / d.prevClose * 100) : null;
       const cls = deltaClass(change || 0);
       const chgText = change === null ? "—" : `${arrow(change)} ${fmt(Math.abs(change))}${pct===null?"":` (${pct>=0?"+":""}${pct.toFixed(2)}%)`}`;
+
+      // Buy/Sell Signal badge — only appears once computeAllSignals() has
+      // computed today's SMA+RSI for this symbol (see below); blank until
+      // then so the card looks exactly the same as before while it computes.
+      const sig = signals[r.sym];
+      let sigHtml = "";
+      if(sig && sig.ok){
+        sigHtml = `<div class="stat-row signal-row">
+          <span class="signal-badge ${sig.cls}">${sig.label}</span>
+          <span class="sig-reason">${sig.reason}</span>
+        </div>`;
+      }else if(sig && sig.ok === false){
+        sigHtml = `<div class="stat-row signal-row">
+          <span class="signal-badge flat">⏳ Signal-க்கு Data போதல்</span>
+        </div>`;
+      }
+
       return `<div class="stock-card">
         <div class="top-row">
           <span><span class="sym">${r.sym}</span><span class="cname">${r.name}</span></span>
@@ -510,6 +542,7 @@
           <span>Volume <b>${fmtVol(d.volume)}</b></span>
           <span>VWAP <b>${fmt(d.vwap)}</b></span>
         </div>
+        ${sigHtml}
       </div>`;
     }).join("");
   }
@@ -616,6 +649,12 @@
 
   $("refreshBtn").addEventListener("click", fetchAll);
 
+  // Buy/Sell Signal: compute once per day automatically (skips silently if
+  // already computed today — see computeAllSignals), plus a manual button
+  // to force a fresh recalculation any time.
+  computeAllSignals();
+  $("signalRefreshBtn").addEventListener("click", () => computeAllSignals(true));
+
   // ── Live auto-refresh: fetch fresh data every LIVE_INTERVAL_MS on its own,
   // no tap needed — "live-live" updating while the app stays open. Paused
   // whenever the tab/app is backgrounded (saves battery + mobile data, and
@@ -696,11 +735,15 @@
   // Daily OHLC history via Yahoo's chart endpoint (interval=1d, range=1mo —
   // 1mo comfortably covers the last 7 trading days even across
   // weekends/holidays); reuses the same CORS proxies as the live quotes.
-  async function fetchDailyHistory(symbol){
+  async function fetchDailyHistory(symbol, range){
     // Same double-encoding fix as fetchQuote() above — `symbol` is already
     // encoded by the caller (encodeURIComponent(sym)+".NS"), so it must NOT
     // be passed through encodeURIComponent() a second time here.
-    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1mo`;
+    // `range` defaults to "1mo" (used by the Nifty 50 Entry 7/3-day history
+    // view above) — the Buy/Sell Signal engine below passes "3mo" instead,
+    // since SMA(20)/RSI(14) need more trading days than 1mo reliably gives.
+    range = range || "1mo";
+    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=${range}`;
     try{
       const json = await fetchViaProxiesParallel(yahooUrl, PROXY_TIMEOUT_MS);
       if(!json) return { ok:false };
@@ -720,6 +763,91 @@
     }catch(e){
       return { ok:false };
     }
+  }
+
+  // ── Buy/Sell Signal (Technical Indicator: SMA 5-day vs 20-day + RSI 14-day)
+  // ⚠️ This is a mechanical technical-indicator calculation, NOT investment
+  // advice — see the disclaimer shown above the stock list in the HTML.
+  // Computed ONCE PER DAY per symbol (cached in localStorage, same pattern
+  // as the Nifty 50 Entry history above) — deliberately NOT recomputed on
+  // every 5-second live-price tick, since that would mean an extra 3-month
+  // daily-history fetch for all 50 stocks every 5 seconds = guaranteed
+  // Yahoo/proxy rate-limit trouble for zero real benefit (a daily indicator
+  // does not meaningfully change within the same day).
+  const LS_SIGNAL_KEY = "marketStatus_signals_v1";
+  function loadSignals(){
+    try{
+      const raw = localStorage.getItem(LS_SIGNAL_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return {};
+  }
+  function saveSignals(){
+    try{ localStorage.setItem(LS_SIGNAL_KEY, JSON.stringify(signals)); }catch(e){}
+  }
+  let signals = loadSignals();
+
+  function sma(closes, period){
+    if(closes.length < period) return null;
+    const slice = closes.slice(-period);
+    return slice.reduce((a,b) => a+b, 0) / period;
+  }
+
+  // Simple-average RSI (not Wilder-smoothed) — a lightweight, good-enough
+  // approximation for a personal reference indicator like this one.
+  function rsi(closes, period){
+    if(closes.length < period + 1) return null;
+    let gains = 0, losses = 0;
+    for(let i = closes.length - period; i < closes.length; i++){
+      const diff = closes[i] - closes[i-1];
+      if(diff >= 0) gains += diff; else losses += -diff;
+    }
+    const avgGain = gains / period, avgLoss = losses / period;
+    if(avgLoss === 0) return 100;
+    const rs = avgGain / avgLoss;
+    return 100 - (100 / (1 + rs));
+  }
+
+  // Rule (priority order, so it's easy to explain in one line):
+  //   1) RSI ≤ 30 (Oversold)  → 🟢 BUY
+  //   2) RSI ≥ 70 (Overbought) → 🔴 SELL
+  //   3) otherwise, 5-day vs 20-day average trend decides BUY/SELL/HOLD
+  function computeSignal(closes){
+    const s5 = sma(closes, 5), s20 = sma(closes, 20), r = rsi(closes, 14);
+    if(s5 == null || s20 == null || r == null) return { ok:false };
+    if(r <= 30) return { ok:true, label:"🟢 BUY", cls:"up", reason:`RSI ${r.toFixed(0)} (Oversold)` };
+    if(r >= 70) return { ok:true, label:"🔴 SELL", cls:"down", reason:`RSI ${r.toFixed(0)} (Overbought)` };
+    if(s5 > s20) return { ok:true, label:"🟢 BUY", cls:"up", reason:"Uptrend (5D Avg > 20D Avg)" };
+    if(s5 < s20) return { ok:true, label:"🔴 SELL", cls:"down", reason:"Downtrend (5D Avg < 20D Avg)" };
+    return { ok:true, label:"🟡 HOLD", cls:"flat", reason:"Neutral" };
+  }
+
+  async function computeSignalForSymbol(sym){
+    const res = await fetchDailyHistory(encodeURIComponent(sym) + ".NS", "3mo");
+    if(!res.ok || res.days.length < 21) return { ok:false };
+    return computeSignal(res.days.map(d => d.close));
+  }
+
+  let signalsRunning = false;
+  async function computeAllSignals(force){
+    if(signalsRunning) return;
+    const todayStr = todayKey();
+    if(!force && signals._dateKey === todayStr) return; // already done today
+    signalsRunning = true;
+    let done = 0;
+    const total = stockList.length;
+    $("signalStatus").innerHTML = `<span class="loading-dot"></span>Buy/Sell Signal கணக்கிடுது… (0/${total})`;
+    await fetchInChunks(stockList, async ([sym]) => {
+      signals[sym] = await computeSignalForSymbol(sym);
+      done++;
+      $("signalStatus").innerHTML = `<span class="loading-dot"></span>Buy/Sell Signal கணக்கிடுது… (${done}/${total})`;
+    }, 6);
+    signals._dateKey = todayStr;
+    saveSignals();
+    const nowStr = new Date().toLocaleString("en-IN", { hour:"2-digit", minute:"2-digit", day:"2-digit", month:"short" });
+    $("signalStatus").textContent = "Signal Last Update: " + nowStr;
+    renderStocks(lastStockRows); // repaint badges into the already-shown cards
+    signalsRunning = false;
   }
 
   function dayChangeInfo(d){
