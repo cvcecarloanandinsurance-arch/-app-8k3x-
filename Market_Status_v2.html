@@ -302,23 +302,42 @@
   // networks block. Tried FIRST in the parallel race below; if it isn't
   // running, it fails almost instantly and the public proxies take over
   // with no extra delay.
+  // Bug found & fixed: sw-v2.js already whitelisted "thingproxy" so the
+  // Service Worker would never intercept/cache it — but thingproxy was never
+  // actually added here to PROXIES. So the race only ever had 3 public
+  // relays (not 4), and if all 3 were blocked on this mobile network (as
+  // already seen before), there was one fewer fallback than intended.
+  // Added back in as a 4th public relay.
+  // Cloudflare Worker proxy (index 1) — a free, always-on relay that never
+  // depends on the phone/Termux being open. Unlike the local proxy (index 0,
+  // http://127.0.0.1, only reachable when THIS page itself is served over
+  // plain http:// — blocked as mixed-content when served from an https://
+  // GitHub Pages URL), this one is a real https:// URL, so it works from
+  // BOTH the local-server-hosted copy and the GitHub-Pages-hosted copy.
+  const CLOUDFLARE_PROXY_URL = "https://throbbing-sun-fbbf.cvcecarloanandinsurance.workers.dev";
   const PROXIES = [
     url => `http://127.0.0.1:8091/proxy?url=${encodeURIComponent(url)}`,
+    url => `${CLOUDFLARE_PROXY_URL}/proxy?url=${encodeURIComponent(url)}`,
     url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
     url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-    url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`
+    url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+    url => `https://thingproxy.freeboard.io/fetch/${url}`
   ];
   const PROXY_TIMEOUT_MS = 9000;
 
-  // Once the local proxy (index 0) has answered successfully, every later
-  // request uses ONLY it instead of racing all 4 in parallel — this cuts
-  // real Yahoo-bound traffic to a quarter (was: every symbol hit Yahoo via
-  // all 4 relays simultaneously, win-or-lose, every single fetch). That
-  // 4x reduction is what makes a fast Live-Update interval sustainable
-  // without tripping Yahoo's rate-limit. Self-heals: if the local-only
-  // request ever fails (proxy died in the background), it's marked down
-  // and that one request automatically retries via the full 4-way race.
-  let localProxyActive = false;
+  // Once a fast/reliable proxy — local (index 0) OR Cloudflare (index 1) —
+  // has answered successfully, every later request uses ONLY that one
+  // instead of racing all of them in parallel — this cuts real Yahoo-bound
+  // traffic drastically (was: every symbol hit Yahoo via every relay
+  // simultaneously, win-or-lose, every single fetch). That reduction is
+  // what makes a fast Live-Update interval sustainable without tripping
+  // Yahoo's rate-limit. Self-heals: if the reliable-only request ever fails
+  // (proxy died in the background), it's marked down and that one request
+  // automatically retries via the full multi-way race.
+  // null = no reliable proxy known yet (race everything); 0 = local only;
+  // 1 = Cloudflare only.
+  let reliableProxyIdx = null;
+  let localProxyActive = false; // kept for the on-screen badge logic below
 
   // fetch() alone can hang indefinitely if a proxy accepts the connection but
   // never responds — this wraps it with AbortController so a stuck relay is
@@ -329,38 +348,69 @@
     return fetch(url, { cache: "no-store", signal: controller.signal }).finally(() => clearTimeout(timer));
   }
 
+  // 🐛 CRITICAL FIX (Sep 2026): the function above only guarded the initial
+  // fetch() call — its .finally() cleared the abort timer the MOMENT
+  // fetch() resolved (i.e. as soon as response headers arrived), not after
+  // the body was actually read. Every caller then did `.then(res =>
+  // res.json())` OUTSIDE that protection, with no timeout at all on the
+  // body-read step. If a proxy (local, Cloudflare, or public) ever accepted
+  // the connection and sent headers but then stalled mid-body — a real,
+  // occasionally-happening condition — that single request would hang
+  // FOREVER, and since fetchInChunks needs ALL 50 stock requests to finish
+  // before it resolves, ONE stuck stock permanently froze the entire NIFTY
+  // 50 list on "Loading…", no matter which proxy path was active. This
+  // wraps fetch+json() under the SAME abort timer/signal, clearing the
+  // timer only once the whole thing (including the body read) is done, so
+  // a mid-body stall now gets aborted — and the request fails cleanly
+  // instead of hanging — same as a stalled connection would.
+  async function fetchJsonWithTimeout(url, ms){
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try{
+      const res = await fetch(url, { cache: "no-store", signal: controller.signal });
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   // Fires ALL proxies at once for one target URL and resolves with the FIRST
   // one that returns valid JSON — total wait is ~PROXY_TIMEOUT_MS even when
   // every relay is down, instead of PROXY_TIMEOUT_MS × number-of-relays (the
   // old sequential try-one-then-next design, which is what made 51 symbols
   // take many minutes whenever a relay was unreachable).
   function fetchViaProxiesParallel(yahooUrl, timeoutMs){
-    // Local-only mode once we know it's up (see localProxyActive above);
-    // otherwise race all 4 (local + 3 public) same as before.
-    const localOnly = localProxyActive;
-    const proxyList = localOnly ? [PROXIES[0]] : PROXIES;
-    const tasks = proxyList.map((build, i) =>
-      fetchWithTimeout(build(yahooUrl), timeoutMs).then(res => {
-        if(!res.ok) throw new Error("HTTP " + res.status);
-        return res.json();
-      }).then(json => ({ json, viaLocal: i === 0 }))
+    // Reliable-only mode once we know local OR Cloudflare is up (see
+    // reliableProxyIdx above); otherwise race everything (local + Cloudflare
+    // + public relays) same as before.
+    const reliableOnly = reliableProxyIdx !== null;
+    const proxyList = reliableOnly ? [PROXIES[reliableProxyIdx]] : PROXIES;
+    const idxMap = reliableOnly ? [reliableProxyIdx] : PROXIES.map((_, i) => i);
+    const tasks = proxyList.map((build, listPos) =>
+      fetchJsonWithTimeout(build(yahooUrl), timeoutMs).then(json => ({ json, realIdx: idxMap[listPos] }))
     );
     return new Promise(resolve => {
       let remaining = tasks.length;
       let settled = false;
       tasks.forEach(p => {
-        p.then(({json, viaLocal}) => {
+        p.then(({json, realIdx}) => {
           if(!settled){
             settled = true;
-            if(viaLocal) localProxyActive = true;
+            if(realIdx === 0 || realIdx === 1){
+              reliableProxyIdx = realIdx;
+              localProxyActive = (realIdx === 0);
+            }
             resolve(json);
           }
         }).catch(() => {
           remaining--;
           if(remaining === 0 && !settled){
-            if(localOnly){
-              // Local proxy just failed — mark it down and retry this one
-              // request via the full 4-way race instead of giving up.
+            if(reliableOnly){
+              // The reliable proxy just failed — mark it down and retry
+              // this one request via the full multi-way race instead of
+              // giving up.
+              reliableProxyIdx = null;
               localProxyActive = false;
               fetchViaProxiesParallel(yahooUrl, timeoutMs).then(resolve);
             }else{
@@ -625,14 +675,29 @@
     try{
       const res = await fetchWithTimeout("http://127.0.0.1:8091/ping", 2000);
       if(res.ok){
+        reliableProxyIdx = 0;
         localProxyActive = true;
         $("proxyBadge").textContent = "⚡ Local Proxy Active (Fast & Reliable)";
         $("proxyBadge").style.color = "var(--up)";
         return;
       }
     }catch(e){}
+    // Local proxy unreachable (normal on the GitHub/https-hosted copy, where
+    // a plain http:// fetch to 127.0.0.1 is blocked as mixed content) — try
+    // the Cloudflare Worker next; it's a real https:// URL so it works here.
+    try{
+      const res = await fetchWithTimeout(CLOUDFLARE_PROXY_URL + "/ping", 4000);
+      if(res.ok){
+        reliableProxyIdx = 1;
+        localProxyActive = false;
+        $("proxyBadge").textContent = "☁️ Cloudflare Proxy Active (Fast & Reliable)";
+        $("proxyBadge").style.color = "var(--up)";
+        return;
+      }
+    }catch(e){}
+    reliableProxyIdx = null;
     localProxyActive = false;
-    $("proxyBadge").textContent = "🌐 Public Proxy Mode (Local Proxy Run ஆகல)";
+    $("proxyBadge").textContent = "🌐 Public Proxy Mode (Local/Cloudflare Proxy Run ஆகல)";
     $("proxyBadge").style.color = "var(--muted)";
   }
   checkLocalProxy();
