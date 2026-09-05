@@ -27,7 +27,7 @@
 // broke the relative-path links between the HTML/manifest/service-worker.
 // Using a fresh, never-before-seen filename set each time sidesteps that
 // "(1)"-suffix auto-rename entirely.
-const CACHE_NAME = "market-status-shell-v6-v2names";
+const CACHE_NAME = "market-status-shell-v7-no-store-fix";
 const CORE_ASSETS = [
   "./Market_Status_v2.html",
   "./market-status-manifest-v2.json",
@@ -59,6 +59,7 @@ self.addEventListener("fetch", (event) => {
   // never touched by this service worker, never cached.
   if (
     url.includes("127.0.0.1:8091") ||
+    url.includes("workers.dev") ||
     url.includes("corsproxy.io") ||
     url.includes("allorigins.win") ||
     url.includes("codetabs.com") ||
@@ -72,9 +73,17 @@ self.addEventListener("fetch", (event) => {
   // latest file first; only fall back to the last cached copy if the network
   // request fails (offline / no signal). This is the fix for the "shows old
   // version until I delete and reinstall" problem.
+  // 🐛 FIX (Sep 2026): fetch(req) alone still respects ordinary HTTP caching
+  // rules — GitHub Pages sends cache-control headers that let the browser's
+  // OWN disk cache silently return a stale response here even though this
+  // branch is "network-first" at the Service Worker level. That's why a new
+  // deploy only ever showed up after manually clearing Chrome's site data.
+  // { cache: "no-store" } forces an actual round-trip to the network every
+  // time, so a fresh GitHub commit is picked up on the very next open with
+  // no manual cache-clearing needed.
   if (req.mode === "navigate" || url.endsWith(".html")) {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: "no-store" })
         .then((res) => {
           const copy = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
