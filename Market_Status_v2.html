@@ -1082,7 +1082,19 @@
   // opens instantly (and installs as a Home Screen icon) even offline.
   if("serviceWorker" in navigator){
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("./sw-v2.js").catch(() => {});
+      // 🐛 FIX (Sep 2026): registering with no options let Chrome keep
+      // serving a BYTE-CACHED copy of sw-v2.js itself for up to 24 hours
+      // after it last checked — even though the file on GitHub had changed
+      // — so a fresh deploy could still end up talking to an old, stale
+      // Service Worker underneath it, and manually clearing Chrome's site
+      // data was the only way to notice a new version. `updateViaCache:
+      // 'none'` plus an explicit `.update()` forces a real check on every
+      // load, so future fixes are picked up automatically — no more manual
+      // cache-clearing needed. (Same fix already applied to STFFE's
+      // mgr-9x2q.html service-worker registration earlier this session.)
+      navigator.serviceWorker.register("./sw-v2.js", { updateViaCache: "none" }).then((reg) => {
+        try{ reg.update(); }catch(e){}
+      }).catch(() => {});
     });
   }
 
