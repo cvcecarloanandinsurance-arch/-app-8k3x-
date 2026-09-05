@@ -623,46 +623,70 @@
 
   let isFetching = false;
   let lastFetchAt = 0;
+  const STOCK_FETCH_HARD_DEADLINE_MS = 45000;
   async function fetchAll(){
     if(isFetching) return;
     isFetching = true;
     lastFetchAt = Date.now();
-    $("errBox").style.display = "none";
-    $("statusLine").innerHTML = `<span class="loading-dot"></span>Indices Fetch ஆகுது…`;
-    $("refreshBtn").textContent = "⏳ Fetch ஆகுது…";
+    try{
+      $("errBox").style.display = "none";
+      $("statusLine").innerHTML = `<span class="loading-dot"></span>Indices Fetch ஆகுது…`;
+      $("refreshBtn").textContent = "⏳ Fetch ஆகுது…";
 
-    let anyFail = false;
+      let anyFail = false;
 
-    const [niftyData, sensexData] = await Promise.all([
-      fetchQuote("%5ENSEI"),
-      fetchQuote("%5EBSESN")
-    ]);
-    renderIndex("nifty", niftyData);
-    renderIndex("sensex", sensexData);
-    if(!niftyData.ok || !sensexData.ok) anyFail = true;
+      const [niftyData, sensexData] = await Promise.all([
+        fetchQuote("%5ENSEI"),
+        fetchQuote("%5EBSESN")
+      ]);
+      renderIndex("nifty", niftyData);
+      renderIndex("sensex", sensexData);
+      if(!niftyData.ok || !sensexData.ok) anyFail = true;
 
-    // 50 stocks fetched via the same reliable v8/chart endpoint as the
-    // indices, 6 at a time in parallel (see fetchInChunks) — fast because
-    // several run at once, but gentle enough on Yahoo not to trigger limits.
-    $("statusLine").innerHTML = `<span class="loading-dot"></span>${stockList.length} Stocks Fetch ஆகுது…`;
-    const stockRows = await fetchInChunks(stockList, async ([sym, name]) => {
-      const data = await fetchQuote(encodeURIComponent(sym) + ".NS");
-      if(!data.ok) anyFail = true;
-      return { sym, name, data };
-    }, 6);
-    renderStocks(stockRows);
+      // 50 stocks fetched via the same reliable v8/chart endpoint as the
+      // indices, 6 at a time in parallel (see fetchInChunks) — fast because
+      // several run at once, but gentle enough on Yahoo not to trigger limits.
+      $("statusLine").innerHTML = `<span class="loading-dot"></span>${stockList.length} Stocks Fetch ஆகுது…`;
+      // 🐛 SAFETY-NET FIX (Sep 2026): whatever the exact cause (a proxy or
+      // upstream that accepts a connection but never fully completes, an
+      // edge case not covered by the per-request timeout, etc.) — if this
+      // ever takes longer than STOCK_FETCH_HARD_DEADLINE_MS, previously the
+      // UI stayed on "Loading…" FOREVER and even the Refresh button did
+      // nothing (isFetching stayed stuck true, so every tap silently
+      // no-op'd). Racing against a hard deadline guarantees the list always
+      // unsticks — worst case it shows "Fetch ஆகல" placeholders — and,
+      // critically, isFetching/the Refresh button always become usable
+      // again so the person can just try again instead of being stuck.
+      const stockRows = await Promise.race([
+        fetchInChunks(stockList, async ([sym, name]) => {
+          const data = await fetchQuote(encodeURIComponent(sym) + ".NS");
+          if(!data.ok) anyFail = true;
+          return { sym, name, data };
+        }, 6),
+        new Promise(resolve => setTimeout(() => {
+          anyFail = true;
+          resolve(stockList.map(([sym, name]) => ({ sym, name, data: { ok:false } })));
+        }, STOCK_FETCH_HARD_DEADLINE_MS))
+      ]);
+      renderStocks(stockRows);
 
-    const nowStr = new Date().toLocaleString("en-IN", { hour:"2-digit", minute:"2-digit", day:"2-digit", month:"short" });
-    $("statusLine").textContent = "Last Update: " + nowStr;
-    $("refreshBtn").textContent = "🔄 இப்போ Refresh பண்ணு";
+      const nowStr = new Date().toLocaleString("en-IN", { hour:"2-digit", minute:"2-digit", day:"2-digit", month:"short" });
+      $("statusLine").textContent = "Last Update: " + nowStr;
+      $("refreshBtn").textContent = "🔄 இப்போ Refresh பண்ணு";
 
-    if(anyFail){
-      $("errBox").style.display = "block";
-      $("errBox").textContent = "⚠️ சில Symbol-க்கு Data கிடைக்கல் (Free Data Source Rate-Limit/Network Issue ஆகி இருக்கலாம்). 🔄 Refresh பண்ணி பாருங்க. Critical முடிவுகளுக்கு Official NSE/BSE Site-ஐ Cross-check பண்ணுங்க.";
+      if(anyFail){
+        $("errBox").style.display = "block";
+        $("errBox").textContent = "⚠️ சில Symbol-க்கு Data கிடைக்கல் (Free Data Source Rate-Limit/Network Issue ஆகி இருக்கலாம்). 🔄 Refresh பண்ணி பாருங்க. Critical முடிவுகளுக்கு Official NSE/BSE Site-ஐ Cross-check பண்ணுங்க.";
+      }
+
+      saveCache({ nifty: niftyData, sensex: sensexData, stocks: stockRows, time: nowStr, dateKey: todayKey() });
+    } finally {
+      // Always resets, no matter what happened above (success, a handled
+      // failure, or even an unexpected error) — this is what guarantees the
+      // Refresh button and the next auto-refresh tick can never get
+      // permanently stuck again.
+      isFetching = false;
     }
-
-    saveCache({ nifty: niftyData, sensex: sensexData, stocks: stockRows, time: nowStr, dateKey: todayKey() });
-    isFetching = false;
   }
 
   // ── Local proxy detection: pings market-proxy-server.js (if running via
