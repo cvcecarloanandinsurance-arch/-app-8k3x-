@@ -217,6 +217,11 @@
   .signal-badge.flat{background:rgba(138,143,152,0.12); color:var(--muted); border:1px solid var(--line);}
   .sig-reason{color:var(--muted); font-size:10.5px;}
 </style>
+<!-- 🆕 pdf-lib — explicit user instruction (Sep 2026, Tamil): "Daily News
+     PDF Upload பண்ணும்போது, அது Automatic-ஆ Consolidated PDF-உடன் Merge
+     ஆகணும்". Client-side PDF merge, runs entirely in the browser (no
+     backend needed for this) — https://pdf-lib.js.org -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 </head>
 <body>
 
@@ -257,6 +262,24 @@
   <div class="status-line" id="statusLine"></div>
   <div class="status-line" id="proxyBadge"></div>
   <div class="status-line" id="signalStatus"></div>
+
+  <!-- 🆕 Daily News / Consolidated News — explicit user instruction (Sep
+       2026, Tamil): "Today's News-ஐ Daily Upload பண்ணுவேன், அது
+       Automatic-ஆ Consolidated PDF-ஆ மாறணும்". Claude (via a Scheduled
+       Routine you set up) generates the day's Tamil news PDF; you upload
+       it here, and the app merges it into one running Consolidated PDF
+       — entirely in the browser, via pdf-lib (nothing uploaded to any
+       server). -->
+  <div class="section-label">📰 DAILY NEWS — NIFTY 50 (தமிழ்)</div>
+  <div class="paytm-box">
+    <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">Claude Routine Generate பண்ண Today's News PDF-ஐ இங்க Upload பண்ணுங்க — Automatic-ஆ Consolidated PDF-உடன் Merge ஆகி, Updated Consolidated File Download ஆகும்.</div>
+    <input type="file" accept="application/pdf" id="todayNewsFileInput" style="display:none;">
+    <div class="paytm-grid">
+      <div class="btn gold" id="uploadTodayNewsBtn">📤 Upload Today's News (PDF)</div>
+      <div class="btn gold" id="downloadConsolidatedNewsBtn">📥 Download Consolidated News</div>
+    </div>
+    <div id="newsStatusLine" style="font-size:11px; color:var(--muted); margin-top:10px;"></div>
+  </div>
 
   <div class="section-label">PAYTM MONEY — LIVE DEPTH &amp; ORDERS</div>
   <div class="paytm-box">
@@ -556,6 +579,109 @@
 <script>
 (function(){
   "use strict";
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Daily News → Consolidated News (PDF Merge) — explicit user
+  // instruction (Sep 2026, Tamil): "Today's News Upload பண்ணும்போது,
+  // அது Automatic-ஆ Consolidated PDF-ஆ மாறணும்". Runs ENTIRELY in the
+  // browser via pdf-lib (CDN script in <head>) — the uploaded PDF never
+  // leaves the phone/goes to any server. Stored in IndexedDB (not
+  // localStorage) since PDFs can grow to several MB, well past
+  // localStorage's practical ~5MB string limit.
+  // ══════════════════════════════════════════════════════════════════
+  const NEWS_DB_NAME = "marketStatusNewsDB_v1";
+  const NEWS_STORE_NAME = "pdfs";
+  function openNewsDB(){
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(NEWS_DB_NAME, 1);
+      req.onupgradeneeded = () => { req.result.createObjectStore(NEWS_STORE_NAME); };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  function idbGet(key){
+    return openNewsDB().then(db => new Promise((resolve, reject) => {
+      const tx = db.transaction(NEWS_STORE_NAME, "readonly");
+      const req = tx.objectStore(NEWS_STORE_NAME).get(key);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    }));
+  }
+  function idbSet(key, value){
+    return openNewsDB().then(db => new Promise((resolve, reject) => {
+      const tx = db.transaction(NEWS_STORE_NAME, "readwrite");
+      tx.objectStore(NEWS_STORE_NAME).put(value, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    }));
+  }
+  function downloadPdfBytes(bytes, filename){
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+  function todayDateStrForNews(){
+    return new Date().toLocaleDateString("en-IN", { day:"2-digit", month:"2-digit", year:"numeric" }).split("/").reverse().join("-");
+  }
+  async function refreshNewsStatusLine(){
+    const el = document.getElementById("newsStatusLine");
+    if(!el) return;
+    try{
+      const consolidated = await idbGet("consolidated");
+      if(!consolidated){ el.textContent = "இன்னும் Consolidated PDF இல்ல — முதல் Today's News Upload பண்ணுங்க."; return; }
+      const { PDFDocument } = window.PDFLib || {};
+      if(!PDFDocument){ el.textContent = "PDF Library Load ஆகல் — Internet Connection Check பண்ணுங்க."; return; }
+      const doc = await PDFDocument.load(consolidated);
+      el.textContent = `✅ Consolidated PDF Ready — மொத்தம் ${doc.getPageCount()} Pages (எல்லா Days-ஓட News Merge ஆகி இருக்கு).`;
+    }catch(e){
+      el.textContent = "Status Check ஆகல்: " + (e && e.message);
+    }
+  }
+  const uploadTodayNewsBtnEl = document.getElementById("uploadTodayNewsBtn");
+  const todayNewsFileInputEl = document.getElementById("todayNewsFileInput");
+  if(uploadTodayNewsBtnEl && todayNewsFileInputEl){
+    uploadTodayNewsBtnEl.addEventListener("click", () => todayNewsFileInputEl.click());
+    todayNewsFileInputEl.addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if(!file) return;
+      const statusEl = document.getElementById("newsStatusLine");
+      if(statusEl) statusEl.textContent = "Today's News PDF-ஐ Consolidated-உடன் Merge பண்ணுது…";
+      try{
+        const { PDFDocument } = window.PDFLib || {};
+        if(!PDFDocument) throw new Error("pdf-lib Load ஆகல் — Internet Connection Check பண்ணுங்க.");
+        const arrayBuffer = await file.arrayBuffer();
+        const todayDoc = await PDFDocument.load(arrayBuffer);
+        const existingConsolidated = await idbGet("consolidated");
+        const consolidatedDoc = existingConsolidated ? await PDFDocument.load(existingConsolidated) : await PDFDocument.create();
+        const copiedPages = await consolidatedDoc.copyPages(todayDoc, todayDoc.getPageIndices());
+        copiedPages.forEach(p => consolidatedDoc.addPage(p));
+        const mergedBytes = await consolidatedDoc.save();
+        await idbSet("consolidated", mergedBytes);
+        await idbSet(`today_${todayDateStrForNews()}`, arrayBuffer); // keep today's own upload too, for reference
+        downloadPdfBytes(mergedBytes, `Consolidated_Nifty50_News_${todayDateStrForNews()}.pdf`);
+        if(statusEl) statusEl.textContent = `✅ Merge ஆயிடுச்சு! Updated Consolidated PDF Download ஆகிடுச்சு (மொத்தம் ${consolidatedDoc.getPageCount()} Pages).`;
+      }catch(err){
+        if(statusEl) statusEl.textContent = "❌ Merge Fail ஆச்சு: " + (err && err.message);
+      }
+      todayNewsFileInputEl.value = ""; // allow re-selecting the same file name later
+    });
+  }
+  const downloadConsolidatedNewsBtnEl = document.getElementById("downloadConsolidatedNewsBtn");
+  if(downloadConsolidatedNewsBtnEl){
+    downloadConsolidatedNewsBtnEl.addEventListener("click", async () => {
+      const statusEl = document.getElementById("newsStatusLine");
+      const consolidated = await idbGet("consolidated");
+      if(!consolidated){
+        if(statusEl) statusEl.textContent = "இன்னும் Consolidated PDF இல்ல — முதல் Today's News Upload பண்ணுங்க.";
+        return;
+      }
+      downloadPdfBytes(consolidated, `Consolidated_Nifty50_News_${todayDateStrForNews()}.pdf`);
+    });
+  }
+  refreshNewsStatusLine();
 
   // ── Default Nifty 50 constituents (as of Sep 2026, sourced from NSE-tracking
   // data). NSE rebalances this index twice a year (Jan 31 / Jul 31 cut-off) —
@@ -3812,7 +3938,20 @@
     if(!el) return;
     const all = computeAllStockBacktests();
     if(!all.length){ el.innerHTML = `<div class="stock-empty">App Collect பண்ற Own Data இன்னும் போதாது — ஒவ்வொரு Trading Day Market Close ஆனதுக்கு அப்புறமும் இது தானா 1 நாள் Data சேர்த்துக்கும், கொஞ்ச நாளில் Ranking வரும்.</div>`; return; }
-    const top10 = all.slice(0, 10), top5 = all.slice(0, 5), top3 = all.slice(0, 3), top1 = all.slice(0, 1);
+    // 🐛 FIX (Sep 2026, found from user's screenshots): previously
+    // ranked whichever stocks had the highest % REGARDLESS of whether
+    // that % was actually a Loss-zone value (<50%) — a screenshot showed
+    // "BAJAJFINSV 22%" labelled "🥇 Best 1", while the SAME number was
+    // shown in Red/Loss color right next to it. A Loss-zone stock can
+    // never be genuinely "Best" just for being the least-bad among
+    // losers. Now only stocks with Strike Rate ≥50% (genuine winners)
+    // qualify for Top/Best ranking at all.
+    const qualifying = all.filter(s => s.pct >= 50);
+    if(!qualifying.length){
+      el.innerHTML = `<div class="stock-empty">⚠️ இப்போ 50%-க்கு மேல் Strike Rate இருக்குற Stock ஒண்ணும் இல்ல. Loss-Zone Stocks-ஐ "Best/Top"-ன்னு தவறா காட்டாம, இங்க எதுவும் Show பண்ணல் — Data இன்னும் சேரட்டும்.</div>`;
+      return;
+    }
+    const top10 = qualifying.slice(0, 10), top5 = qualifying.slice(0, 5), top3 = qualifying.slice(0, 3), top1 = qualifying.slice(0, 1);
     el.innerHTML =
       renderTopTier("10", "✨ Top 10", `<span class="top-badge">✨</span>`, top10, groupStrikeRate(top10)) +
       renderTopTier("5", "⭐ Top 5", `<span class="top-badge flash-slow">⭐</span>`, top5, groupStrikeRate(top5)) +
@@ -3905,12 +4044,22 @@
       `<th style="${CELL} background:var(--card2); ${STICKY}">Call</th></tr>`;
     const bodyRows = rows.map((r, i) => {
       let pill = "", rankCls = "";
-      if(i === 0){ rankCls = "rank-badge-1"; pill = "🥇 "; }
-      else if(i === 1){ rankCls = "rank-badge-2"; pill = "🥈 "; }
-      else if(i === 2){ rankCls = "rank-badge-3"; pill = "🥉 "; }
-      else if(i === n-1){ rankCls = "rank-badge-worst1"; pill = "⚠️ "; }
-      else if(i === n-2){ rankCls = "rank-badge-worst2"; pill = "⚠️ "; }
-      else if(i === n-3){ rankCls = "rank-badge-worst3"; pill = "⚠️ "; }
+      // 🐛 FIX (Sep 2026, found from user's screenshots): a 🥇 medal on a
+      // Loss-zone (<50%) stock is self-contradictory — being "the least
+      // bad of the losers" doesn't make it "Best". Medals/Worst-tags now
+      // only apply when the row's OWN value genuinely qualifies (Top
+      // medals need pct≥50, Worst-warnings need pct<50) — if the top-3
+      // by rank still aren't real winners, or the bottom-3 aren't real
+      // losers, they just render as plain rows with no special badge.
+      const avgPctForRank = r.indicators.avgAll ? r.indicators.avgAll.pct : null;
+      const isRealWinner = avgPctForRank != null && avgPctForRank >= 50;
+      const isRealLoser = avgPctForRank != null && avgPctForRank < 50;
+      if(i === 0 && isRealWinner){ rankCls = "rank-badge-1"; pill = "🥇 "; }
+      else if(i === 1 && isRealWinner){ rankCls = "rank-badge-2"; pill = "🥈 "; }
+      else if(i === 2 && isRealWinner){ rankCls = "rank-badge-3"; pill = "🥉 "; }
+      else if(i === n-1 && isRealLoser){ rankCls = "rank-badge-worst1"; pill = "⚠️ "; }
+      else if(i === n-2 && isRealLoser){ rankCls = "rank-badge-worst2"; pill = "⚠️ "; }
+      else if(i === n-3 && isRealLoser){ rankCls = "rank-badge-worst3"; pill = "⚠️ "; }
       const zebra = (!rankCls && i % 2 === 1) ? "background:var(--card2);" : "";
       const nameCellStyle = rankCls ? `${CELL} text-align:left; white-space:nowrap; font-weight:800;` : `${CELL} text-align:left; white-space:nowrap; font-weight:600;`;
       const avgCellStyle = rankCls ? `${CELL} font-weight:800;` : `${CELL} font-weight:700;`;
@@ -4335,7 +4484,10 @@
       .sort((a,b) => b.soFar.pct - a.soFar.pct);
     const rankedHtml = rankedSoFar.map((r, i) => {
       const cls = r.soFar.pct >= 50 ? "up" : "down";
-      const medal = i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : `${i+1}.`;
+      // 🐛 FIX (Sep 2026, found from user's screenshots): a medal on a
+      // <50% (Loss-zone) indicator is self-contradictory — only genuine
+      // winners (≥50%) get 🥇🥈🥉, others just get a plain rank number.
+      const medal = (r.soFar.pct >= 50) ? (i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : `${i+1}.`) : `${i+1}.`;
       return `<div class="top-item">
         <span class="tname"><span class="sym">${medal} ${r.label}</span></span>
         <span class="tstrike ${cls}">${r.soFar.pct.toFixed(1)}% (${r.soFar.rawSuccess}/${r.soFar.rawTotal} Suggestions, ${r.soFar.daysCount} Days)</span>
