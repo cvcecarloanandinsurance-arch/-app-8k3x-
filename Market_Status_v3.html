@@ -154,6 +154,30 @@
   .top-badge.flash-fast{animation:topFlash 0.9s infinite;}
   .top-badge.flash-slow{animation:topFlash 1.7s infinite;}
   @keyframes topFlash{0%,100%{opacity:1;} 50%{opacity:0.2;}}
+  .pl-flash{animation:topFlash 1.1s infinite;}
+  /* 🆕 One Point of Contact — 6 distinct Rank Colors (Top 3 Gainers +
+     Bottom 3 Losers), explicit user instruction: "கிரீன் ரெட்டை தவிர்த்து
+     வேற வேற கலர்ல, Flash/Blink ஆகணும்" — each rank gets its OWN color,
+     separate from the plain green/red used for the other 44 stocks. */
+  .rank-badge-1{background:linear-gradient(135deg,#d4af37,#f5d76e); color:#141400; font-weight:800; animation:topFlash 1.3s infinite;}
+  .rank-badge-2{background:linear-gradient(135deg,#4a90d9,#8ec6ff); color:#04121f; font-weight:800; animation:topFlash 1.3s infinite;}
+  .rank-badge-3{background:linear-gradient(135deg,#c47f2a,#f0b060); color:#1a0f00; font-weight:800; animation:topFlash 1.3s infinite;}
+  .rank-badge-worst1{background:linear-gradient(135deg,#8b0000,#e53935); color:#fff; font-weight:800; animation:topFlash 0.9s infinite;}
+  .rank-badge-worst2{background:linear-gradient(135deg,#6a1b9a,#ab47bc); color:#fff; font-weight:800; animation:topFlash 0.9s infinite;}
+  .rank-badge-worst3{background:linear-gradient(135deg,#ad1457,#ec407a); color:#fff; font-weight:800; animation:topFlash 0.9s infinite;}
+  .rank-pill{padding:2px 8px; border-radius:8px; font-size:10px; margin-right:6px;}
+  /* 🆕 One Point of Contact table — explicit user instruction (Sep 2026,
+     Tamil): "Mobile-ஐ Landscape-ல் Rotate பண்ணி, Table முழுசையும் ஒரே
+     View-ல் பாக்கணும்" — Portrait-ல் min-width:640px Force பண்ணி
+     Horizontal Scroll கொடுக்குது (8 Columns Narrow Screen-ல் Fit
+     ஆகாததால்); Landscape-ல் Width அதிகமா கிடைக்குறதால், min-width-ஐ
+     Remove பண்ணி, Table 100% Width-க்கு Shrink ஆகி (Fixed % colgroup
+     வெச்சே), Scroll இல்லாம ஒரே View-ல் Fit ஆகும். */
+  .strike-table{min-width:640px;}
+  @media (orientation: landscape){
+    .strike-table{min-width:0; width:100%;}
+    .strike-table th, .strike-table td{font-size:10.5px; padding:6px 3px;}
+  }
 
   /* ── Nifty 50 Manual Entry full-screen view ── */
   .fs-view{position:fixed; inset:0; background:var(--bg); z-index:30; display:none; flex-direction:column;}
@@ -262,6 +286,16 @@
         <div class="btn" id="paytmFundsBtn">Funds</div>
         <div class="btn" id="paytmOrdersBtn">Order Book</div>
       </div>
+      <div class="paytm-grid" style="margin-top:8px;">
+        <div class="btn gold" id="paytmOrderBookFormattedBtn">📋 Order Book (Live Status + Cancel)</div>
+        <div class="btn gold" id="paytmPnlBtn">📊 Consolidated P&amp;L (எல்லா Companies)</div>
+        <div class="btn gold" id="paytmFundsFormattedBtn">💰 My Funds</div>
+      </div>
+      <div class="paytm-grid" style="margin-top:8px;">
+        <div class="btn gold" id="trialConsolidatedPnlBtn" style="border-color:var(--gold);">🎯 Consolidated Trial P&amp;L</div>
+        <div class="btn" id="trialFundResetBtn" style="border-color:var(--down); color:var(--down);">🔄 Reset Trial Fund</div>
+      </div>
+      <div id="paytmFormattedView" style="display:none; margin-top:8px;"></div>
       <pre id="paytmPortfolioOut" class="stock-empty" style="display:none; text-align:left; white-space:pre-wrap; font-size:10.5px; max-height:220px; overflow:auto;"></pre>
 
       <div class="section-label" style="margin-top:16px;">Place Order <span class="dryrun-badge" id="paytmDryRunBadge">DRY-RUN</span></div>
@@ -325,6 +359,36 @@
     <h2>📊 Nifty 50 — 50 Members</h2>
   </div>
   <div class="fs-body">
+    <div class="n50-group" id="unifiedLeaderboardPanel">
+      <div class="glabel">🏆 Indicator Leaderboard — 8 (7 + Combined Average), 15-min Suggestion அடிப்படையில்</div>
+      <div class="plan-disclaimer">⚠️ இது 50 Stocks-க்கும் Combined-ஆ, ஒவ்வொரு 15-min Suggestion Profitable-ஆ இருந்துச்சான்னு Count பண்ணி. "So Far" = எல்லா நாட்களையும் சம Weight கொடுத்து Average பண்ணின %, பக்கத்துல Raw Suggestion Count-உம். ⭐Avg Column = மீதி 7-ஓட Majority Vote (எந்த Time-க்கு எத்தனை Indicators Ready-ஆ இருக்குதோ, அத்தனையையும் மட்டும் வெச்சு — 9:15-10:00 வரைக்கும் 6 Indicators, 10:15 முதல் 7 Indicators Average ஆகும், Rolling Range Warm-Up ஆகுறதால்). Historical Backfilled Days-ல் Per-Suggestion Result இல்லாததால், Sample Size சிறியதா Start ஆகும். Future Guarantee இல்ல.</div>
+      <div id="unifiedLeaderboardBody" style="overflow-x:auto;"><div class="stock-empty">Nifty 50 Entry Data Fetch ஆகும்போது இங்க தெரியும்…</div></div>
+      <div class="glabel" style="margin-top:14px;">🥇 So Far — Rank (Best முதலில்)</div>
+      <div id="soFarRankedBody"><div class="stock-empty">Data Fetch ஆகும்போது இங்க தெரியும்…</div></div>
+    </div>
+    <div class="n50-group" id="allStocksStrikeRatePanel">
+      <div class="glabel">📊 One Point of Contact — 50 Stocks, 15-min Suggestion Strike Rate</div>
+      <div class="plan-disclaimer">⚠️ இது 15-min Suggestion (Pivot)-ன் So-Far Strike Rate — App இதுவரைக்கும் Track பண்ண எல்லா 15-min Ticks-ஐயும் Combine பண்ணி, Profit ≥0% ஆன Ticks Count / Total Ticks × 100. Green ≥50%, Red &lt;50%. Investment Decision-க்கு இதை Base-ஆ Use பண்ணலாம் — Future Guarantee இல்ல, Historical Data மட்டும்.</div>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <div class="btn gold" id="allStocksCalcBtn" style="flex:1;">🔄 Calculate All 50 Stocks</div>
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <div class="btn gold" id="allStocksGraph1DBtn" style="flex:1; font-size:11px;">📈 1-Day</div>
+        <div class="btn gold" id="allStocksGraph3DBtn" style="flex:1; font-size:11px;">📈 So-Far 3-Days</div>
+        <div class="btn gold" id="allStocksGraph7DBtn" style="flex:1; font-size:11px;">📈 So-Far 7-Days</div>
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <div class="btn gold" id="allStocksGraphMergedBtn" style="flex:1; font-size:11px;">🔀 Merged Graph (1D+3D+7D)</div>
+      </div>
+      <div id="qoLandscapeHint" style="display:none; margin-bottom:10px; padding:8px 10px; background:rgba(212,175,55,0.12); border:1px solid var(--gold); border-radius:8px; font-size:11px; text-align:center;">📱 Graph Clear-ஆ பாக்க, Phone-ஐ Landscape-க்கு Rotate பண்ணுங்க</div>
+      <div id="qoGraphZoomControls" style="display:none; gap:8px; margin-bottom:10px;">
+        <div class="btn" id="qoZoomOutBtn" style="flex:1; text-align:center; font-size:13px;">➖ Zoom Out</div>
+        <div class="btn" id="qoZoomResetBtn" style="flex:1; text-align:center; font-size:11px;">Reset</div>
+        <div class="btn" id="qoZoomInBtn" style="flex:1; text-align:center; font-size:13px;">➕ Zoom In</div>
+      </div>
+      <div id="allStocksGraphBody"></div>
+      <div id="allStocksStrikeRateBody"></div>
+    </div>
     <div class="n50-group" id="topPerformersPanel">
       <div class="glabel">🏆 Top Performers — Historical Strike Rate அடிப்படையில் (Pivot Backtest)</div>
       <div class="plan-disclaimer">⚠️ இது ஒரு Ranking மட்டும் — ஒவ்வொரு Stock-ஓட கடந்த நாட்களில் Pivot Point Suggestion எத்தனை தடவை Success ஆச்சுன்னு (Historical Backtest) வெச்சு தான் இந்த Order தீர்மானிக்கப்படுது. Future Guarantee இல்ல, குறைந்தது 3 நாள் Backtestable Data இருக்குற Stocks மட்டும் Rank ஆகும்.</div>
@@ -333,6 +397,28 @@
     <input type="text" class="n50-search" id="n50Search" placeholder="Symbol / Name Search பண்ணுங்க…">
     <div class="n50-status" id="n50ListStatus"></div>
     <div id="n50ListBody"></div>
+  </div>
+</div>
+
+<!-- ── Nifty 50: Today's All 15-min Tick Log (per stock, per user instruction Sep 2026) ── -->
+<div class="fs-view" id="n50TickLogView">
+  <div class="fs-header">
+    <span class="back" id="n50TickLogBack">←</span>
+    <h2 id="n50TickLogTitle">🕒 Today — All 15-min Ticks</h2>
+  </div>
+  <div class="fs-body">
+    <div class="n50-status" id="n50TickLogSub"></div>
+    <div id="n50TickLogAvg"></div>
+    <div class="n50-group">
+      <div class="n50-hgrid head"><span>Time</span><span class="v">Rate (₹)</span><span class="v" style="grid-column:3/5;">15-min Profit/Loss %</span></div>
+      <div id="n50TickLogBody"></div>
+    </div>
+    <div id="n50TickLogOtherAvg"></div>
+    <div class="n50-group">
+      <div class="glabel">📊 Other Indicators — 15-min %</div>
+      <div class="n50-hgrid head" style="grid-template-columns:0.7fr 0.85fr 0.85fr 0.85fr 0.7fr 0.75fr;"><span>Time</span><span>SuperT%</span><span>Boll%</span><span>VWAP%</span><span>ORB</span><span>Roll</span></div>
+      <div id="n50TickLogOtherBody" style="font-size:10px;"></div>
+    </div>
   </div>
 </div>
 
@@ -376,8 +462,77 @@
 
     <div class="n50-group">
       <div class="glabel">📋 Investment Plan — Intraday Session Reference Levels</div>
-      <div class="plan-disclaimer">⚠️ இது ஒரு Guarantee இல்ல — Pivot Point எனும் ஒரு பொது Technical Analysis Method வெச்சு, முந்தைய நாள் High/Low/Close-ஐ வெச்சு மட்டும் Mechanical-ஆ கணக்கிடப்பட்ட Reference Levels இது. உண்மையான Live Market நடத்தை (News/Volume/Sentiment) இதுல சேரல. இதை மட்டும் வெச்சு Trade பண்ணாதீங்க — உங்க சொந்த ஆராய்ச்சி + Risk Capacity வெச்சு தான் இறுதி முடிவு எடுக்கணும். (Strike Rate கீழ Historical Backtest-ஐ மட்டும் காட்டுது — Future Guarantee இல்ல.)</div>
+      <div class="plan-disclaimer">⚠️ இது ஒரு Guarantee இல்ல — Pivot Point எனும் ஒரு பொது Technical Analysis Method வெச்சு, Last 7 Working Days-ஓட (Confirmed-Final) High/Low/Close-ஐ Aggregate பண்ணி மட்டும் Mechanical-ஆ கணக்கிடப்பட்ட Reference Levels இது. உண்மையான Live Market நடத்தை (News/Volume/Sentiment) இதுல சேரல. இதை மட்டும் வெச்சு Trade பண்ணாதீங்க — உங்க சொந்த ஆராய்ச்சி + Risk Capacity வெச்சு தான் இறுதி முடிவு எடுக்கணும். (Strike Rate கீழ Historical Backtest-ஐ மட்டும் காட்டுது — Future Guarantee இல்ல.)</div>
       <div id="n50InvestPlan"></div>
+    </div>
+
+    <div class="plan-disclaimer" style="margin:4px 2px 10px;">⚠️ கீழ இருக்குற Indicators — SuperTrend, Bollinger Bands, ATR Stop-Loss, ORB (Fixed + Rolling), VWAP — Additional, Standard Technical Analysis Methods (Textbook Formulas). இவையும் Guarantee இல்ல, Mechanical Calculation மட்டும். ஒவ்வொண்ணுக்கும் Daily + 15-min Strike Rate இருக்கு (VWAP-ஓட Daily Backtest ஒரு Price-Average Proxy, True Volume-Weighted இல்ல — கீழ Note பாருங்க; ATR Stop-Loss-க்கு 15-min "Survival Rate" — Directional % இல்ல, Tick Log Screen-ல் Average Badge-ஆ இருக்கு).</div>
+    <div id="n50OtherIndicators"></div>
+
+    <!-- 🆕 Quick Order — explicit user instruction (Sep 2026, Tamil):
+         Per-stock, 15-min-Suggestion-linked Order Placement panel. Real
+         money via Paytm Money. -->
+    <div class="n50-group" id="quickOrderPanel">
+      <div class="glabel">📞 Take Order — இந்த 15-min Suggestion அடிப்படையில்</div>
+      <!-- 🆕 Trial/Real Mode Toggle — explicit user instruction (Sep 2026,
+           Tamil): "Trial-க்கும் ஏற்பாடு பண்ணனும், Real Fund Switch ஆக
+           கூடாது, எத்தனை Trial வேணும்னாலும் பாக்கணும், Virtual Fund Badge
+           கூட வேண்டாம்". Defaults to TRIAL (safer starting point). -->
+      <div style="display:flex; gap:8px; margin-bottom:10px;">
+        <label style="flex:1; text-align:center; padding:8px; border-radius:8px; border:2px solid var(--gold); cursor:pointer;">
+          <input type="radio" name="qoTradeMode" value="trial" checked style="margin-right:4px;">🎯 Trial Mode
+        </label>
+        <label style="flex:1; text-align:center; padding:8px; border-radius:8px; border:2px solid var(--down); cursor:pointer;">
+          <input type="radio" name="qoTradeMode" value="real" style="margin-right:4px;">🔴 Real Mode
+        </label>
+      </div>
+      <div id="qoTrialModeNotice" style="display:block; margin-bottom:10px; padding:8px; background:rgba(212,175,55,0.1); border:1px solid var(--gold); border-radius:8px; font-size:11px;">🎯 Trial Mode-ல் இருக்கீங்க — Real Money/Fund/Paytm Account எதுவும் Touch ஆகாது. எத்தனை Trial வேணும்னாலும் Free-ஆ Practice பண்ணலாம்.</div>
+      <div class="plan-disclaimer" id="qoRealModeNotice" style="display:none;">⚠️ Real Money Order — உங்க Paytm Money Account-ல் Actual-ஆ Execute ஆகும். Undo பண்ண முடியாது. Careful-ஆ Check பண்ணி Confirm பண்ணுங்க.</div>
+      <div id="quickOrderConnStatus" class="stock-empty">Paytm Money Status Check ஆகுது…</div>
+      <div id="quickOrderBody" style="display:none;">
+        <div class="paytm-grid">
+          <div class="paytm-mini"><div class="lbl">🟢 Buy Price</div><input class="paytm-input" id="qoBuyPrice" type="number" step="0.05" style="margin-top:2px;"></div>
+          <div class="paytm-mini"><div class="lbl">🔴 Sell/Target Price</div><input class="paytm-input" id="qoSellPrice" type="number" step="0.05" style="margin-top:2px;"></div>
+          <div class="paytm-mini"><div class="lbl">🛑 Stop-Loss Price</div><input class="paytm-input" id="qoStopPrice" type="number" step="0.05" style="margin-top:2px;"></div>
+          <div class="paytm-mini"><div class="lbl">🔢 Quantity</div><input class="paytm-input" id="qoQuantity" type="number" step="1" min="1" value="1" style="margin-top:2px;"></div>
+        </div>
+        <div class="paytm-row" style="margin-top:10px; gap:14px;">
+          <label style="font-size:11.5px; display:flex; align-items:center; gap:5px;"><input type="radio" name="qoTxnType" value="B" checked> 🟢 Buy</label>
+          <label style="font-size:11.5px; display:flex; align-items:center; gap:5px;"><input type="radio" name="qoTxnType" value="S"> 🔴 Sell</label>
+        </div>
+        <div class="paytm-row" style="margin-top:8px; gap:14px;">
+          <label style="font-size:11.5px; display:flex; align-items:center; gap:5px;"><input type="radio" name="qoOrderType" value="LMT" checked> LIMIT Order</label>
+          <label style="font-size:11.5px; display:flex; align-items:center; gap:5px;"><input type="radio" name="qoOrderType" value="MKT"> MARKET Order</label>
+        </div>
+        <div id="qoFundStatus" style="margin-top:10px; font-size:11.5px;"></div>
+        <div class="btn gold" id="qoTakeOrderBtn" style="margin-top:10px; text-align:center; display:none;">✅ Take Order</div>
+        <div id="qoPositionTrackerStatus" style="margin-top:10px; font-size:10.5px; color:var(--muted);"></div>
+        <!-- 🆕 Continue Banner — explicit user instruction (Sep 2026, Tamil):
+             fires exactly at each 15-min window boundary with the NEW
+             window's Suggestion already filled into the boxes above;
+             person edits those boxes here if they want, then Continue/Stop. -->
+        <div id="qoContinueBanner" style="display:none; margin-top:10px; padding:10px; border:2px solid var(--gold); border-radius:8px; background:rgba(212,175,55,0.08);">
+          <div style="font-weight:700; margin-bottom:8px; font-size:11.5px;">⏸️ புது 15-min Window Start ஆச்சு — மேல Boxes-ல் Fresh Suggestion இருக்கு. Edit பண்ணி, Continue/Stop Choose பண்ணுங்க.</div>
+          <div style="display:flex; gap:8px;">
+            <div class="btn gold" id="qoContinueBtn" style="flex:1; text-align:center; padding:8px;">✅ Continue</div>
+            <div class="btn" id="qoStopBtn" style="flex:1; text-align:center; padding:8px; background:var(--down); border-color:var(--down); color:#fff; font-weight:700;">🛑 Stop</div>
+          </div>
+        </div>
+        <pre id="qoOrderOut" class="stock-empty" style="display:none; text-align:left; white-space:pre-wrap; font-size:10.5px; max-height:200px; overflow:auto; margin-top:10px;"></pre>
+      </div>
+    </div>
+
+    <!-- 🆕 Per-Stock P&L — explicit user instruction (Sep 2026, Tamil):
+         "ஒவ்வொரு Company-க்கும் P&L Icon, Tap பண்ணா அந்த Company-க்கு
+         இதுவரைக்கும் Invest பண்ண P&L List வரணும். Value + % ரெண்டும்
+         Profit-ஆ இருந்தா Green, Loss-ஆ இருந்தா Red." -->
+    <div class="n50-group" id="stockPnlPanel">
+      <div class="glabel">📊 P&amp;L — இந்த Company-க்கு (இதுவரைக்கும் Invest பண்ணது)</div>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <div class="btn gold" id="stockPnlBtn" style="flex:1;">📊 P&L பாருங்க (Real)</div>
+        <div class="btn gold" id="stockTrialPnlBtn" style="flex:1;">🎯 Trial P&L பாருங்க</div>
+      </div>
+      <div id="stockPnlBody"></div>
     </div>
   </div>
 </div>
@@ -466,6 +621,241 @@
   // separate from the one-time `cache` const below so the chart always
   // has today's freshest data without a second API call.
   let latestIndexData = { nifty: null, sensex: null };
+  // 🆕 Live market-state safety net — explicit user instruction (Sep 2026,
+  // Tamil): "திடீர்னு NSE சில நாட்களுக்கு Closed அறிவிச்சா, அதை Automatic-ஆ
+  // எடுத்துக்கணும்" — a fixed date list (NSE_HOLIDAYS_2026 below) can only
+  // ever know holidays announced in advance; it can never predict a
+  // surprise/short-notice multi-day closure. So alongside the static
+  // schedule, we also read Yahoo's own real-time `marketState` field
+  // (REGULAR/PRE/POST/CLOSED — mirrors NSE's actual live status) every
+  // time the NIFTY index is fetched, and trust THAT if it disagrees with
+  // the static schedule. Stays null until the first successful index
+  // fetch of the session.
+  let lastKnownMarketState = null;
+  // 🆕 Live open/close + "today confirmed final" tracking — explicit user
+  // instruction (Sep 2026, Tamil): NSE's actual close time isn't always a
+  // fixed 3:30 (can extend to 3:40 etc. on notified days), so (a) the
+  // 15-min N50 window should follow NSE's REAL live open/close for today,
+  // not a hardcoded time, and (b) today's own (still-forming) daily bar
+  // must NOT be used in the Strike Rate backtest until we're sure the
+  // market has genuinely, fully closed AND our last 15-min refresh tick
+  // landed at least a full 15 minutes before that real close (so it
+  // wasn't a half-finished window cut short by an early/extended close).
+  let liveRegularOpenMs = null;   // today's real NSE open time (ms epoch), from Yahoo's own live feed
+  let liveRegularCloseMs = null;  // today's real NSE close time (ms epoch), from Yahoo's own live feed
+  let n50LastTickAt = 0;          // when the last successful 15-min N50 auto-refresh tick ran, while market was open
+  let n50TodayConfirmedFinal = false; // true only once today's bar is safe to use in Strike Rate backtests
+  let n50ConfirmedDateStr = null;     // which IST calendar date the flag above applies to (resets daily)
+  function getIstDateStr(ms){
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(ms);
+    const get = t => parts.find(p => p.type === t).value;
+    return `${get("year")}-${get("month")}-${get("day")}`;
+  }
+  // Call whenever lastKnownMarketState/liveRegularCloseMs might have
+  // changed — flips n50TodayConfirmedFinal to true the moment both
+  // conditions (market really CLOSED + a full final 15-min tick already
+  // happened before that close) are met; auto-resets for a new IST day.
+  function updateTodayConfirmedFinalFlag(){
+    const todayStr = getIstDateStr(Date.now());
+    if(n50ConfirmedDateStr !== todayStr){ n50ConfirmedDateStr = todayStr; n50TodayConfirmedFinal = false; }
+    if(n50TodayConfirmedFinal) return;
+    if(lastKnownMarketState !== "CLOSED") return;
+    if(!liveRegularCloseMs || !n50LastTickAt) return;
+    if((liveRegularCloseMs - n50LastTickAt) >= (15 * 60 * 1000)) n50TodayConfirmedFinal = true;
+  }
+
+  // 🆕 Own day-by-day Strike Rate history for Top Performers — explicit
+  // user instruction (Sep 2026, Tamil): "Yahoo-ஓட Backfilled History
+  // வேணாம் — இந்த App Work பண்ண ஆரம்பிச்ச நாளில் இருந்து, App-ஏ Collect
+  // பண்ற Real Data-ஐ மட்டும் வெச்சு Top 10/5/3/1 Strike Rate வரணும்".
+  // So unlike n50Hist (Yahoo's 1-month backfill, used for the per-stock
+  // 7-day/3-day charts), THIS history starts empty and grows by exactly
+  // one entry per stock per trading day — only once that day's bar is
+  // confirmed fully final (n50TodayConfirmedFinal) — persisted in
+  // localStorage so it survives app restarts/closes.
+  const LS_OWN_HISTORY_KEY = "marketStatus_ownDailyHistory_v1";
+  function loadOwnDailyHistory(){
+    try{ return JSON.parse(localStorage.getItem(LS_OWN_HISTORY_KEY) || "{}"); }catch(e){ return {}; }
+  }
+  function saveOwnDailyHistory(){
+    try{ localStorage.setItem(LS_OWN_HISTORY_KEY, JSON.stringify(ownDailyHistory)); }catch(e){}
+  }
+  let ownDailyHistory = loadOwnDailyHistory(); // { [sym]: [ {date:"YYYY-MM-DD", open, high, low, close}, ... ] } — chronological, own-collected only
+  // Called once per confirmed-final day, right after that day's stocks
+  // finish their last 15-min refresh — copies each stock's now-settled
+  // final bar (from n50Hist, Yahoo's live feed) into our OWN permanent
+  // log, once per date (never re-appends the same date twice).
+  function recordTodayIntoOwnHistoryIfConfirmed(){
+    if(!n50TodayConfirmedFinal) return;
+    const todayStr = getIstDateStr(Date.now());
+    let changed = false;
+    stockList.forEach(([sym]) => {
+      const cached = n50Hist[sym];
+      if(!cached || !cached.days || !cached.days.length) return;
+      const lastBar = cached.days[cached.days.length - 1]; // today's now-finalized bar
+      if(lastBar.high == null || lastBar.low == null || lastBar.close == null) return;
+      const arr = ownDailyHistory[sym] || (ownDailyHistory[sym] = []);
+      if(arr.length && arr[arr.length - 1].date === todayStr) return; // already recorded today — no duplicate
+      arr.push({ date: todayStr, open: lastBar.open, high: lastBar.high, low: lastBar.low, close: lastBar.close });
+      if(arr.length > 60) arr.splice(0, arr.length - 60); // keep a generous cap, no unbounded growth
+      changed = true;
+    });
+    if(changed) saveOwnDailyHistory();
+  }
+
+  // 🆕 One-time Own-Daily-History Backfill — explicit user instruction
+  // (Sep 2026, Tamil): "Strike Rate/Top Performers-உம் உடனே Result
+  // தரணும், Real Days Wait பண்ண வேண்டாம்". ownDailyHistory previously
+  // grew ONLY one confirmed day at a time (via the function above) — so
+  // even after the intraday backfill made the Pivot Suggestion instant,
+  // Strike Rate/Top Performers still needed several real trading days.
+  // FIX: n50Hist[sym].days (Yahoo's 3-month daily history, already
+  // fetched — no extra network call needed here) already contains 60+
+  // days of REAL, CONFIRMED past bars. This copies all of them EXCEPT
+  // the very last entry (which may still be today's still-forming bar)
+  // into ownDailyHistory — deduplicated by dateKey so it never
+  // double-counts a day recordTodayIntoOwnHistoryIfConfirmed already
+  // added for real.
+  const LS_OWN_HISTORY_BACKFILL_DONE_KEY = "marketStatus_ownHistoryBackfillDone_v1";
+  function isOwnHistoryBackfillDone(){ try{ return localStorage.getItem(LS_OWN_HISTORY_BACKFILL_DONE_KEY) === "1"; }catch(e){ return false; } }
+  function markOwnHistoryBackfillDone(){ try{ localStorage.setItem(LS_OWN_HISTORY_BACKFILL_DONE_KEY, "1"); }catch(e){} }
+  function backfillOwnDailyHistoryOnce(){
+    if(isOwnHistoryBackfillDone()) return;
+    let changed = false;
+    stockList.forEach(([sym]) => {
+      const cached = n50Hist[sym];
+      if(!cached || !cached.days || cached.days.length < 2) return; // need at least 1 past day beyond "today"
+      const pastBars = cached.days.slice(0, -1); // everything except the last (possibly still-forming today) entry
+      const arr = ownDailyHistory[sym] || (ownDailyHistory[sym] = []);
+      const existingDates = new Set(arr.map(d => d.date));
+      pastBars.forEach(bar => {
+        const key = bar.dateKey; // ISO date, e.g. "2026-08-27" — matches ownDailyHistory's own date format
+        if(!key || existingDates.has(key)) return;
+        if(bar.high == null || bar.low == null || bar.close == null) return;
+        arr.push({ date: key, open: bar.open, high: bar.high, low: bar.low, close: bar.close });
+        existingDates.add(key);
+        changed = true;
+      });
+      arr.sort((a,b) => a.date.localeCompare(b.date)); // ISO dates sort correctly as plain strings
+      if(arr.length > 60) arr.splice(0, arr.length - 60);
+    });
+    if(changed){ saveOwnDailyHistory(); }
+    markOwnHistoryBackfillDone();
+  }
+
+  // 🆕 Persistent Per-Day Intraday History — explicit user instruction
+  // (Sep 2026, Tamil): "10 AM-க்கு Suggestion கொடுக்கும்போது, முந்தைய 6
+  // நாட்களையும் அதே 10 AM வரைக்கும் மட்டும் எடுக்கணும் (Full Day இல்ல) —
+  // அப்போ தான் எல்லா 7 நாட்களும் சம Time-Window Represent பண்ணும்". This
+  // REPLACES the earlier daily-reset intradayTickLog — instead of
+  // wiping today's ticks at midnight, ticks are now filed under their
+  // OWN date and kept for several days, so a past day's "up to 10 AM"
+  // segment is available when today's suggestion needs it. Capped to a
+  // generous number of recent dates per stock so storage doesn't grow
+  // unbounded.
+  const LS_INTRADAY_HISTORY_KEY = "marketStatus_intradayHistoryByDay_v1";
+  const INTRADAY_HISTORY_MAX_DATES = 12; // keep a little more than 7 so short gaps don't starve the window
+  function loadIntradayHistory(){
+    try{ return JSON.parse(localStorage.getItem(LS_INTRADAY_HISTORY_KEY) || "{}"); }catch(e){ return {}; }
+  }
+  function saveIntradayHistory(){ try{ localStorage.setItem(LS_INTRADAY_HISTORY_KEY, JSON.stringify(intradayHistory)); }catch(e){} }
+  let intradayHistory = loadIntradayHistory(); // { [sym]: { [dateKey:"YYYY-MM-DD"]: [ {hhmm:"0930", time:"09:30 AM", price:1985.5, pct}, ... ] } }
+  function getHHMM(ms){
+    const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(ms);
+    const get = t => parts.find(p => p.type === t).value;
+    return `${get("hour")}${get("minute")}`;
+  }
+  // 🆕 Time-Aligned Weekly Pivot — the CORRECT version per the user's
+  // instruction above: takes the last 6 PAST days (each trimmed to only
+  // its ticks up to the SAME time-of-day as right now) + today's own
+  // ticks so far (also up to right now) = 7 genuinely time-equivalent
+  // segments, not "6 full days + 1 partial day" (which the user
+  // correctly flagged as an inconsistent comparison).
+  function computeTimeAlignedWeeklyPivotLevels(sym, atHHMM){
+    const hist = intradayHistory[sym];
+    if(!hist) return null;
+    const todayStr = getIstDateStr(Date.now());
+    const pastDateKeys = Object.keys(hist).filter(d => d !== todayStr).sort().slice(-6);
+    if(pastDateKeys.length < 6) return null; // need 6 full past days of intraday history yet
+    function segmentFor(dateKey){
+      const ticks = (hist[dateKey] || []).filter(t => t.hhmm <= atHHMM);
+      if(!ticks.length) return null;
+      let hi = -Infinity, lo = Infinity;
+      ticks.forEach(t => { if(t.price > hi) hi = t.price; if(t.price < lo) lo = t.price; });
+      return { high: hi, low: lo, close: ticks[ticks.length - 1].price };
+    }
+    const segments = pastDateKeys.map(segmentFor).concat([segmentFor(todayStr)]);
+    if(segments.some(s => !s)) return null; // some day has no tick at/before this time yet
+    let H = -Infinity, L = Infinity;
+    segments.forEach(s => { if(s.high > H) H = s.high; if(s.low < L) L = s.low; });
+    const C = segments[segments.length - 1].close; // today's latest tick at/before this time
+    const P = (H + L + C) / 3;
+    const R1 = 2*P - L, S1 = 2*P - H;
+    const R2 = P + (H - L), S2 = P - (H - L);
+    const hh = atHHMM.slice(0,2), mm = atHHMM.slice(2,4);
+    return { P, R1, S1, R2, S2, basedOnDate: `${pastDateKeys[0]} – ${todayStr} @ ${hh}:${mm} IST (Time-Aligned)`, daysUsed: 7 };
+  }
+  function recordIntradayTick(){
+    const todayStr = getIstDateStr(Date.now());
+    const now = new Date();
+    const hhmm = getHHMM(now);
+    const timeLabel = new Intl.DateTimeFormat("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: true }).format(now);
+    stockList.forEach(([sym]) => {
+      const cached = n50Hist[sym];
+      if(!cached || !cached.days || !cached.days.length) return;
+      const todayBar = cached.days[cached.days.length - 1]; // today's latest known rate
+      if(todayBar.close == null) return;
+      const symHist = intradayHistory[sym] || (intradayHistory[sym] = {});
+      const arr = symHist[todayStr] || (symHist[todayStr] = []);
+      // 🆕 Explicit user instruction (Sep 2026, Tamil): "ஸ்ட்ரைக் ரேட் என்றது
+      // நீங்க கொடுத்த 15-min Suggestion-க்கு, அந்த Rate-ல எவ்ளோ Profit/Loss
+      // வந்தது அப்படின்றது தான்" — % = (Actual Rate − அதே Tick-ஓட Time-
+      // Aligned Suggestion S1) / S1 × 100. Falls back to the (older,
+      // less precise) 6-full-day+today-partial Suggestion only until 7
+      // days of persistent intraday history have accumulated.
+      const lv = computeTimeAlignedWeeklyPivotLevels(sym, hhmm) || computeLiveWeeklyPivotLevels(sym);
+      const pct = lv ? ((todayBar.close - lv.S1) / lv.S1 * 100) : null;
+      // 🆕 Every-15-min % for the other 4 Indicators too — explicit user
+      // instruction (Sep 2026, Tamil): "Every 15-min Strike Rate எல்லா
+      // Indicator-க்கும் வேணும்". Each % = (Current Rate − that
+      // Indicator's own Reference Level at this exact tick) / Reference
+      // × 100 — same formula pattern as Pivot's S1 above, just a
+      // different reference per indicator. ATR Stop-Loss deliberately
+      // excluded (not a directional target — see disclaimer elsewhere).
+      const st = computeSuperTrend(cached.days, 10, 3);
+      const stPct = st ? ((todayBar.close - st.value) / st.value * 100) : null;
+      const bb = computeBollingerBands(cached.days, 20, 2);
+      const bbPct = bb ? ((todayBar.close - bb.middle) / bb.middle * 100) : null;
+      const vwapNow = cached.vwap;
+      const vwapPct = (vwapNow != null) ? ((todayBar.close - vwapNow) / vwapNow * 100) : null;
+      const orbNow = computeORB(sym);
+      const orbStatus = orbNow ? (orbNow.current > orbNow.high ? "UP" : (orbNow.current < orbNow.low ? "DOWN" : "NEUTRAL")) : null;
+      const rollingNow = computeRollingRangeBreakout(sym);
+      const rollingStatus = rollingNow ? (rollingNow.current > rollingNow.high ? "UP" : (rollingNow.current < rollingNow.low ? "DOWN" : "NEUTRAL")) : null;
+      // 🆕 ATR Stop-Loss — per-tick "Survival" check (corrected — this
+      // DOES have a meaningful 15-min reading, just not a directional %
+      // like the others). The Stop-Loss level itself is fixed for the
+      // whole day (computed from YESTERDAY's confirmed Close + ATR, same
+      // basis as the Daily backtest) — at each tick, Success = today's
+      // live rate is still ABOVE that level (Stop not yet breached).
+      let atrOk = null;
+      if(cached.days.length >= 2){
+        const prevDayBar = cached.days[cached.days.length - 2];
+        const atrSLNow = computeATRStopLoss(cached.days.slice(0, -1), prevDayBar.close, 14, 1.5);
+        if(atrSLNow) atrOk = todayBar.close > atrSLNow.stopLoss;
+      }
+      arr.push({ hhmm, time: timeLabel, price: todayBar.close, pct, stPct, bbPct, vwapPct, orbStatus, rollingStatus, atrOk });
+      if(arr.length > 40) arr.splice(0, arr.length - 40); // generous cap — a full trading day is ~25 ticks at 15-min
+      // Trim to the most recent INTRADAY_HISTORY_MAX_DATES dates for this stock
+      const dateKeys = Object.keys(symHist).sort();
+      if(dateKeys.length > INTRADAY_HISTORY_MAX_DATES){
+        dateKeys.slice(0, dateKeys.length - INTRADAY_HISTORY_MAX_DATES).forEach(k => delete symHist[k]);
+      }
+    });
+    saveIntradayHistory();
+  }
 
   // ── Data fetch: Yahoo Finance's public chart/quote endpoints have no
   // official CORS allowance for arbitrary browser origins, so requests go
@@ -634,6 +1024,13 @@
       const dayHigh = (typeof meta.regularMarketDayHigh === "number") ? meta.regularMarketDayHigh : null;
       const dayLow = (typeof meta.regularMarketDayLow === "number") ? meta.regularMarketDayLow : null;
       const volume = (typeof meta.regularMarketVolume === "number") ? meta.regularMarketVolume : null;
+      const marketState = (typeof meta.marketState === "string") ? meta.marketState : null; // REGULAR/PRE/POST/CLOSED — Yahoo's live mirror of NSE's actual status
+      // 🆕 Today's REAL open/close time — read from Yahoo's own live feed
+      // instead of a hardcoded 09:15/15:30, so an NSE-notified extended/
+      // early-close session (e.g. 3:40 close) is followed automatically.
+      const regPeriod = meta.currentTradingPeriod && meta.currentTradingPeriod.regular;
+      const regularStart = (regPeriod && typeof regPeriod.start === "number") ? regPeriod.start * 1000 : null;
+      const regularEnd = (regPeriod && typeof regPeriod.end === "number") ? regPeriod.end * 1000 : null;
 
       // VWAP = Σ(Typical Price × Candle Volume) / Σ(Candle Volume), built
       // from every valid 5-min candle received today (standard intraday
@@ -662,7 +1059,7 @@
       }
 
       if(ltp === null) return { ok:false };
-      return { open: todayOpen, ltp, prevClose, dayHigh, dayLow, volume, vwap, candles, ok: true };
+      return { open: todayOpen, ltp, prevClose, dayHigh, dayLow, volume, vwap, candles, marketState, regularStart, regularEnd, ok: true };
     }catch(e){
       return { ok:false };
     }
@@ -931,7 +1328,13 @@
       ]);
       renderIndex("nifty", niftyData);
       renderIndex("sensex", sensexData);
-      if(niftyData.ok) latestIndexData.nifty = niftyData;
+      if(niftyData.ok){
+        latestIndexData.nifty = niftyData;
+        if(niftyData.marketState) lastKnownMarketState = niftyData.marketState; // live safety-net for isNseMarketOpenNow()
+        if(typeof niftyData.regularStart === "number") liveRegularOpenMs = niftyData.regularStart;
+        if(typeof niftyData.regularEnd === "number") liveRegularCloseMs = niftyData.regularEnd;
+        updateTodayConfirmedFinalFlag();
+      }
       if(sensexData.ok) latestIndexData.sensex = sensexData;
       if(!niftyData.ok || !sensexData.ok) anyFail = true;
 
@@ -1121,6 +1524,329 @@
   $("paytmFundsBtn").addEventListener("click", () => paytmShowPortfolio("/paytm/funds", "Funds"));
   $("paytmOrdersBtn").addEventListener("click", () => paytmShowPortfolio("/paytm/orders", "Order Book"));
 
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Formatted Order Book (Live Status + Cancel) — explicit user
+  // instruction (Sep 2026, Tamil): "ஆர்டர் பிளேஸ் பண்ண உடனே இதே ஆப்ல
+  // புரோகிரஸ் தெரியணும், Trading Stop-உம் இதே ஆப்ல Direct பண்ணனும்".
+  // ⚠️ Honest note: exact field names in Paytm's order response aren't
+  // 100% confirmed without a live test — tries the common variants
+  // (order_no/orderNo, order_status/status, etc.); if a field doesn't
+  // match your account's actual response shape, the raw "Order Book"
+  // button above still shows the full JSON as a fallback.
+  // ══════════════════════════════════════════════════════════════════
+  function statusColorClass(status){
+    const s = (status || "").toUpperCase();
+    if(s.includes("COMPLETE") || s.includes("EXECUTED") || s.includes("FILLED")) return "up";
+    if(s.includes("REJECT") || s.includes("CANCEL")) return "down";
+    return ""; // pending/open/trigger-pending — neutral/gold
+  }
+  function isCancellableStatus(status){
+    const s = (status || "").toUpperCase();
+    return s.includes("PENDING") || s.includes("OPEN") || s === "" ;
+  }
+  async function renderFormattedOrderBook(){
+    const viewEl = $("paytmFormattedView");
+    $("paytmPortfolioOut").style.display = "none";
+    viewEl.style.display = "block";
+    viewEl.innerHTML = `<div class="stock-empty">Order Book Loading…</div>`;
+    const r = await paytmFetch("/paytm/orders");
+    if(!r || !r.ok){
+      viewEl.innerHTML = `<div class="stock-empty">Order Book Fetch ஆகல்: ${(r && (r.message||r.error)) || "unknown error"}</div>`;
+      return;
+    }
+    const raw = r.data;
+    const orders = Array.isArray(raw) ? raw : (raw && (raw.orders || raw.data)) || [];
+    if(!orders.length){ viewEl.innerHTML = `<div class="stock-empty">இன்றைக்கு Orders எதுவும் இல்ல.</div>`; return; }
+    viewEl.innerHTML = orders.map(o => {
+      const orderNo = o.order_no ?? o.orderNo ?? o.order_id ?? o.id ?? "—";
+      const sym = o.trading_symbol ?? o.tradingSymbol ?? o.symbol ?? o.security_id ?? "—";
+      const txn = (o.transaction_type ?? o.txn_type ?? o.transactionType ?? "").toString().toUpperCase().startsWith("B") ? "BUY" : "SELL";
+      const qty = o.quantity ?? o.qty ?? "—";
+      const price = o.price ?? o.order_price ?? o.orderPrice ?? 0;
+      const status = o.order_status ?? o.status ?? o.orderStatus ?? "";
+      const cls = statusColorClass(status);
+      const cancellable = isCancellableStatus(status);
+      return `<div class="paytm-mini" style="margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+        <div>
+          <div style="font-weight:700;">${sym} <span class="${txn==="BUY"?"up":"down"}">${txn}</span> ${qty}</div>
+          <div style="font-size:10px; color:var(--muted);">Order#${orderNo} · ₹${price} · <span class="${cls}" style="font-weight:700;">${status || "—"}</span></div>
+        </div>
+        ${cancellable ? `<span class="btn" data-cancel-order="${orderNo}" style="padding:5px 10px; font-size:11px; border-color:var(--down); color:var(--down);">❌ Cancel</span>` : ""}
+      </div>`;
+    }).join("");
+    viewEl.querySelectorAll("[data-cancel-order]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const orderNo = btn.getAttribute("data-cancel-order");
+        const sure = confirm(`⚠️ Order #${orderNo}-ஐ Cancel பண்ணப் போறீங்க. Confirm ஆ?`);
+        if(!sure) return;
+        btn.textContent = "Cancelling…";
+        const res = await paytmFetch("/paytm/order/cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-confirm": "CANCEL-REAL-ORDER" },
+          body: JSON.stringify({ order_no: orderNo, segment: "E" })
+        });
+        if(res && res.ok && !res.dry_run){
+          alert("✅ Order Cancel ஆயிடுச்சு.");
+          renderFormattedOrderBook(); // refresh the list
+        } else {
+          alert("❌ Cancel Fail ஆச்சு: " + ((res && (res.message||res.error)) || "unknown error"));
+          btn.textContent = "❌ Cancel";
+        }
+      });
+    });
+  }
+  const paytmOrderBookFormattedBtnEl = $("paytmOrderBookFormattedBtn");
+  if(paytmOrderBookFormattedBtnEl) paytmOrderBookFormattedBtnEl.addEventListener("click", renderFormattedOrderBook);
+
+  // 🆕 P&L Summary — explicit user instruction (Sep 2026, Tamil): "ப்ராஃபிட்
+  // அண்ட் லாஸ் அக்கவுண்ட் இதுல கொண்டு வாங்க". Reuses positions data
+  // (/paytm/pnl → same underlying position() call) — tries common field
+  // name variants for unrealized/realized P&L, quantity, avg price.
+  async function renderPnlSummary(){
+    const viewEl = $("paytmFormattedView");
+    $("paytmPortfolioOut").style.display = "none";
+    viewEl.style.display = "block";
+    viewEl.innerHTML = `<div class="stock-empty">Consolidated P&L Loading…</div>`;
+    const r = await paytmFetch("/paytm/pnl");
+    if(!r || !r.ok){
+      viewEl.innerHTML = `<div class="stock-empty">P&L Fetch ஆகல்: ${(r && (r.message||r.error)) || "unknown error"}</div>`;
+      return;
+    }
+    const raw = r.data;
+    const positions = Array.isArray(raw) ? raw : (raw && (raw.positions || raw.data)) || [];
+    if(!positions.length){ viewEl.innerHTML = `<div class="stock-empty">இப்போ Open Positions எதுவும் இல்ல.</div>`; return; }
+    // 🆕 Explicit user instruction (Sep 2026, Tamil): "இதை (Per-Stock P&L)
+    // Style-லேயே Consolidated-ஆ காட்டுங்க — Value + % ரெண்டும் Green/Red".
+    // Same computation (invested = |qty| × avgPrice, pct = pnl/invested)
+    // as the Per-Stock P&L panel, just summed across EVERY company here.
+    let totalPnl = 0, totalInvested = 0;
+    const rows = positions.map(p => {
+      const sym = p.trading_symbol ?? p.tradingSymbol ?? p.symbol ?? p.security_id ?? "—";
+      const qty = p.net_qty ?? p.quantity ?? p.netQty ?? 0;
+      const avgPrice = p.average_price ?? p.avgPrice ?? p.buy_avg ?? 0;
+      const pnl = Number(p.unrealised_profit ?? p.unrealizedProfit ?? p.pnl ?? p.unrealised_pnl ?? p.realised_profit ?? 0);
+      const invested = Math.abs(Number(qty)) * Number(avgPrice || 0);
+      totalPnl += (isNaN(pnl) ? 0 : pnl);
+      totalInvested += (isNaN(invested) ? 0 : invested);
+      const pct = invested > 0 ? (pnl / invested * 100) : 0;
+      const cls = pnl >= 0 ? "up" : "down";
+      return `<div class="paytm-mini" style="margin-bottom:6px; display:flex; justify-content:space-between;">
+        <div>${sym} <span style="color:var(--muted); font-size:10px;">Qty: ${qty}</span></div>
+        <div class="${cls}" style="font-weight:700; text-align:right;">${pnl >= 0 ? "+" : ""}₹${pnl.toFixed(2)}<br><span style="font-size:10px;">${pnl >= 0 ? "+" : ""}${pct.toFixed(2)}%</span></div>
+      </div>`;
+    }).join("");
+    const totalPct = totalInvested > 0 ? (totalPnl / totalInvested * 100) : 0;
+    const totalCls = totalPnl >= 0 ? "up" : "down";
+    viewEl.innerHTML = `<div style="padding:14px; border:2px solid ${totalPnl >= 0 ? "var(--up)" : "var(--down)"}; border-radius:10px; text-align:center; margin-bottom:10px;">
+        <div style="font-size:11px; color:var(--muted);">Consolidated P&L — Final Result (எல்லா Companies)</div>
+        <div class="${totalCls}" style="font-size:22px; font-weight:800;">${totalPnl >= 0 ? "+" : ""}₹${totalPnl.toFixed(2)}</div>
+        <div class="${totalCls}" style="font-size:15px; font-weight:700;">${totalPnl >= 0 ? "+" : ""}${totalPct.toFixed(2)}%</div>
+      </div>${rows}
+      <div style="font-size:10px; color:var(--muted); margin-top:6px;">⚠️ இது Open Positions-ஓட Unrealised P&L மட்டும் — Closed/Historical Trades இதுல் இல்ல. Field Names Live Data-உடன் Mismatch இருந்தா சொல்லுங்க.</div>`;
+  }
+  const paytmPnlBtnEl = $("paytmPnlBtn");
+  if(paytmPnlBtnEl) paytmPnlBtnEl.addEventListener("click", renderPnlSummary);
+
+  // 🆕 Consolidated Trial P&L — explicit user instruction (Sep 2026,
+  // Tamil): "Trial Mode-க்கு Consolidated P&L இருந்தா போதும், 1 Lakh
+  // Fund-உடன், Real Money-உடன் எந்த சம்பந்தமும் இல்லாம". Same visual
+  // style as the Real Consolidated P&L, but built ENTIRELY from local
+  // trialTrades + cached (Yahoo) prices — zero Paytm API calls.
+  function renderTrialConsolidatedPnl(){
+    const viewEl = $("paytmFormattedView");
+    $("paytmPortfolioOut").style.display = "none";
+    viewEl.style.display = "block";
+    if(!trialTrades.length){
+      viewEl.innerHTML = `<div class="stock-empty">இன்னும் Trial Trades எதுவும் இல்ல. Take Order Panel-ல் 🎯 Trial Mode-ல் ஒரு Trade எடுத்துக்கு பாருங்க.</div>`;
+      return;
+    }
+    const { totalPnl, perStock } = computeTrialConsolidatedPnl();
+    const adjustments = totalTrialAdjustments();
+    const trialFundBalance = TRIAL_FUND_BASE + totalPnl + adjustments;
+    const totalCls = totalPnl >= 0 ? "up" : "down";
+    const rows = Object.keys(perStock).map(sym => {
+      const b = perStock[sym];
+      const pct = b.invested > 0 ? (b.pnl / b.invested * 100) : 0;
+      const cls = b.pnl >= 0 ? "up" : "down";
+      return `<div class="paytm-mini" style="margin-bottom:6px; display:flex; justify-content:space-between;">
+        <div>${sym} <span style="color:var(--muted); font-size:10px;">${b.count} Trade(s)</span></div>
+        <div class="${cls}" style="font-weight:700; text-align:right;">${b.pnl >= 0 ? "+" : ""}₹${b.pnl.toFixed(2)}<br><span style="font-size:10px;">${b.pnl >= 0 ? "+" : ""}${pct.toFixed(2)}%</span></div>
+      </div>`;
+    }).join("");
+    viewEl.innerHTML = `
+      <div style="padding:14px; border:2px solid var(--gold); border-radius:10px; text-align:center; margin-bottom:8px;">
+        <div style="font-size:11px; color:var(--muted);">🎯 Trial Fund Balance</div>
+        <div style="font-size:22px; font-weight:800; color:var(--gold);">₹${trialFundBalance.toFixed(2)}</div>
+        <div style="font-size:10px; color:var(--muted); margin-top:2px;">Base ₹1,00,000 ${totalPnl >= 0 ? "+" : "−"} ₹${Math.abs(totalPnl).toFixed(2)} (Trade P&L)${adjustments > 0 ? ` + ₹${adjustments.toFixed(2)} (Top-Up)` : ""}</div>
+      </div>
+      <div style="padding:12px; border:2px solid ${totalPnl >= 0 ? "var(--up)" : "var(--down)"}; border-radius:10px; text-align:center; margin-bottom:10px;">
+        <div style="font-size:11px; color:var(--muted);">Consolidated Trial P&L (எல்லா Companies, Trade History-ல் இருந்தே — Top-Up Sேர்க்கல்)</div>
+        <div class="${totalCls}" style="font-size:20px; font-weight:800;">${totalPnl >= 0 ? "+" : ""}₹${totalPnl.toFixed(2)}</div>
+      </div>
+      ${rows}
+      <div style="font-size:10px; color:var(--muted); margin-top:6px;">🎯 100% Trial/Practice — Real Money, Paytm Account, Real Fund எதுவுமே இதுல் இல்ல, Touch ஆகாது.</div>`;
+  }
+  const trialConsolidatedPnlBtnEl = $("trialConsolidatedPnlBtn");
+  if(trialConsolidatedPnlBtnEl) trialConsolidatedPnlBtnEl.addEventListener("click", renderTrialConsolidatedPnl);
+  const trialFundResetBtnEl = $("trialFundResetBtn");
+  if(trialFundResetBtnEl) trialFundResetBtnEl.addEventListener("click", resetTrialFund);
+
+  // 🆕 Formatted Funds — explicit user instruction (Sep 2026, Tamil):
+  // "என்னோட ஃபண்டு எவ்ளோ இருக்கு அப்படின்றத இந்த ஆப்ல ஷோ பண்ண முடியுமா".
+  // Reuses the same /paytm/funds endpoint the Quick Order panel's Fund
+  // Check already calls (no new backend needed) — just presents it as a
+  // clear, big-number display instead of raw JSON. Tries the common
+  // field name variants for Available Balance, Used Margin, Total.
+  async function renderFundsFormatted(){
+    const viewEl = $("paytmFormattedView");
+    $("paytmPortfolioOut").style.display = "none";
+    viewEl.style.display = "block";
+    viewEl.innerHTML = `<div class="stock-empty">Funds Loading…</div>`;
+    const r = await paytmFetch("/paytm/funds");
+    if(!r || !r.ok){
+      viewEl.innerHTML = `<div class="stock-empty">Funds Fetch ஆகல்: ${(r && (r.message||r.error)) || "unknown error"}</div>`;
+      return;
+    }
+    const d = r.data || {};
+    // 🐛 FIX (Sep 2026): withdrawal_balance was wrongly merged into
+    // "available" as a fallback — but "Available for Trading" and
+    // "Available for Withdrawal" are DIFFERENT numbers under SEBI/broker
+    // settlement rules (money used as collateral, or added in the last
+    // T+1 settlement window, can be usable for trading but NOT yet
+    // withdrawable). Now extracted and shown as its OWN separate line.
+    const available = d.available_cash ?? d.availableCash ?? d.net ?? d.cash_available ?? null;
+    const withdrawalLimit = d.withdrawal_balance ?? d.withdrawalBalance ?? d.cash_available_for_withdrawal ?? d.cashAvailableForWithdrawal ?? d.withdrawable_balance ?? null;
+    const used = d.utilised_amount ?? d.utilisedAmount ?? d.used_margin ?? d.usedMargin ?? null;
+    const total = d.total_balance ?? d.totalBalance ?? d.net_balance ?? null;
+    if(available == null && withdrawalLimit == null && used == null && total == null){
+      viewEl.innerHTML = `<div class="stock-empty">Fund Fields Recognize ஆகல் — Raw Data Below:</div><pre style="text-align:left; white-space:pre-wrap; font-size:10px; max-height:200px; overflow:auto;">${JSON.stringify(d, null, 2)}</pre>`;
+      return;
+    }
+    viewEl.innerHTML = `
+      <div style="padding:14px; border:2px solid var(--gold); border-radius:10px; text-align:center; margin-bottom:8px;">
+        <div style="font-size:11px; color:var(--muted);">💰 Available Fund (Trade பண்ண Use பண்ணலாம்)</div>
+        <div class="up" style="font-size:24px; font-weight:800;">${available != null ? "₹"+Number(available).toFixed(2) : "—"}</div>
+      </div>
+      <div style="padding:12px; border:2px solid #4a90d9; border-radius:10px; text-align:center; margin-bottom:8px;">
+        <div style="font-size:11px; color:var(--muted);">🏦 Withdrawal Limit (Bank-க்கு Withdraw பண்ணக்கூடிய Amount, Paytm Policy படி)</div>
+        <div style="font-size:20px; font-weight:800; color:#4a90d9;">${withdrawalLimit != null ? "₹"+Number(withdrawalLimit).toFixed(2) : "— (Field கிடைக்கல்)"}</div>
+      </div>
+      <div class="paytm-grid">
+        <div class="paytm-mini"><div class="lbl">Used (Margin/Orders)</div><div class="val">${used != null ? "₹"+Number(used).toFixed(2) : "—"}</div></div>
+        <div class="paytm-mini"><div class="lbl">Total Balance</div><div class="val">${total != null ? "₹"+Number(total).toFixed(2) : "—"}</div></div>
+      </div>
+      <div style="font-size:10px; color:var(--muted); margin-top:6px;">⚠️ Withdrawal Limit, Trading Fund-ஐ விட **குறைவா** இருக்கலாம் (Unsettled Trades/T+1 Rules-க்காக) — இது Normal-தான், Bug இல்ல. Actual Withdrawal Action, Paytm Money App-லேயே செய்யணும்.</div>`;
+  }
+  const paytmFundsFormattedBtnEl = $("paytmFundsFormattedBtn");
+  if(paytmFundsFormattedBtnEl) paytmFundsFormattedBtnEl.addEventListener("click", renderFundsFormatted);
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Per-Stock P&L — explicit user instruction (Sep 2026, Tamil):
+  // "ஒவ்வொரு Company-க்கும் P&L Icon — Tap பண்ணா அந்த Company-க்கு
+  // இதுவரைக்கும் Invest பண்ண P&L List வரணும், Value + % ரெண்டும் Green/
+  // Red". Filters the SAME positions() data (already used for the
+  // global P&L Summary) down to just the CURRENTLY open stock's symbol
+  // — no extra backend endpoint needed, this is purely a client-side
+  // filter + per-stock total.
+  // ══════════════════════════════════════════════════════════════════
+  async function renderStockPnl(){
+    const sym = n50ActiveSym;
+    const el = $("stockPnlBody");
+    if(!sym || !el) return;
+    el.innerHTML = `<div class="stock-empty">${sym}-க்கு P&L Loading…</div>`;
+    const r = await paytmFetch("/paytm/pnl");
+    if(!r || !r.ok){
+      el.innerHTML = `<div class="stock-empty">P&L Fetch ஆகல்: ${(r && (r.message||r.error)) || "unknown error"}</div>`;
+      return;
+    }
+    const raw = r.data;
+    const allPositions = Array.isArray(raw) ? raw : (raw && (raw.positions || raw.data)) || [];
+    // Match this stock by trading symbol (case-insensitive) — most
+    // Paytm position entries carry the NSE symbol directly.
+    const matched = allPositions.filter(p => {
+      const posSym = (p.trading_symbol ?? p.tradingSymbol ?? p.symbol ?? "").toString().toUpperCase();
+      return posSym === sym.toUpperCase();
+    });
+    if(!matched.length){
+      el.innerHTML = `<div class="stock-empty">${sym}-க்கு இப்போ Open Position/Investment எதுவும் இல்ல.</div>`;
+      return;
+    }
+    let totalPnl = 0, totalInvested = 0;
+    const rows = matched.map(p => {
+      const qty = p.net_qty ?? p.quantity ?? p.netQty ?? 0;
+      const avgPrice = p.average_price ?? p.avgPrice ?? p.buy_avg ?? 0;
+      const pnl = Number(p.unrealised_profit ?? p.unrealizedProfit ?? p.pnl ?? p.unrealised_pnl ?? p.realised_profit ?? 0);
+      const invested = Math.abs(Number(qty)) * Number(avgPrice || 0);
+      totalPnl += (isNaN(pnl) ? 0 : pnl);
+      totalInvested += (isNaN(invested) ? 0 : invested);
+      const pct = invested > 0 ? (pnl / invested * 100) : 0;
+      const cls = pnl >= 0 ? "up" : "down";
+      return `<div class="paytm-mini" style="margin-bottom:6px; display:flex; justify-content:space-between;">
+        <div>Qty: ${qty} <span style="color:var(--muted); font-size:10px;">@ Avg ₹${Number(avgPrice).toFixed(2)}</span></div>
+        <div class="${cls}" style="font-weight:700; text-align:right;">${pnl >= 0 ? "+" : ""}₹${pnl.toFixed(2)}<br><span style="font-size:10px;">${pnl >= 0 ? "+" : ""}${pct.toFixed(2)}%</span></div>
+      </div>`;
+    }).join("");
+    const totalPct = totalInvested > 0 ? (totalPnl / totalInvested * 100) : 0;
+    const totalCls = totalPnl >= 0 ? "up" : "down";
+    el.innerHTML = `
+      <div style="padding:14px; border:2px solid ${totalPnl >= 0 ? "var(--up)" : "var(--down)"}; border-radius:10px; text-align:center; margin-bottom:10px;">
+        <div style="font-size:11px; color:var(--muted);">${sym} — Final Result</div>
+        <div class="${totalCls}" style="font-size:22px; font-weight:800;">${totalPnl >= 0 ? "+" : ""}₹${totalPnl.toFixed(2)}</div>
+        <div class="${totalCls}" style="font-size:15px; font-weight:700;">${totalPnl >= 0 ? "+" : ""}${totalPct.toFixed(2)}%</div>
+      </div>
+      ${rows}
+      <div style="font-size:10px; color:var(--muted); margin-top:6px;">⚠️ இது Open Positions-ஓட Unrealised P&L மட்டும் — Closed/Historical Trades Separate-ஆ Track ஆகாது (இப்போ API-ல் இதுக்கு Bulk Endpoint இல்ல). Field Names Live Data-உடன் Mismatch இருந்தா சொல்லுங்க.</div>`;
+  }
+  const stockPnlBtnEl = $("stockPnlBtn");
+  if(stockPnlBtnEl) stockPnlBtnEl.addEventListener("click", renderStockPnl);
+
+  // 🆕 Trial P&L — explicit user instruction (Sep 2026, Tamil): "Trial
+  // Mode-ல் எடுத்த Trades-க்கு P&L பாக்கணும்". Uses ONLY locally-stored
+  // trialTrades + the app's own already-cached live price (Yahoo-fed,
+  // n50Hist) — NO Paytm API call at all, matching the "no real fund
+  // touch" requirement even for viewing results.
+  function renderStockTrialPnl(){
+    const sym = n50ActiveSym;
+    const el = $("stockPnlBody");
+    if(!sym || !el) return;
+    const matched = trialTrades.filter(t => t.sym === sym);
+    if(!matched.length){
+      el.innerHTML = `<div class="stock-empty">${sym}-க்கு Trial Trades எதுவும் இல்ல இன்னும்.</div>`;
+      return;
+    }
+    const cached = n50Hist[sym];
+    const currentPrice = (cached && cached.days && cached.days.length) ? cached.days[cached.days.length-1].close : null;
+    if(currentPrice == null){
+      el.innerHTML = `<div class="stock-empty">${sym}-ஓட Current Live Price இன்னும் கிடைக்கல் — Nifty 50 Entry Screen-ல் ஒரு தடவை Refresh ஆகட்டும்.</div>`;
+      return;
+    }
+    let totalPnl = 0, totalInvested = 0;
+    const rows = matched.map(t => {
+      const invested = t.qty * t.entryPrice;
+      const pnl = t.txnType === "B" ? (currentPrice - t.entryPrice) * t.qty : (t.entryPrice - currentPrice) * t.qty;
+      totalPnl += pnl; totalInvested += invested;
+      const pct = invested > 0 ? (pnl / invested * 100) : 0;
+      const cls = pnl >= 0 ? "up" : "down";
+      const whenText = new Date(t.timestamp).toLocaleString("en-IN", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" });
+      return `<div class="paytm-mini" style="margin-bottom:6px; display:flex; justify-content:space-between;">
+        <div>${t.txnType === "B" ? "BUY" : "SELL"} ${t.qty} @ ₹${t.entryPrice.toFixed(2)} <span style="color:var(--muted); font-size:10px;">${whenText}</span></div>
+        <div class="${cls}" style="font-weight:700; text-align:right;">${pnl >= 0 ? "+" : ""}₹${pnl.toFixed(2)}<br><span style="font-size:10px;">${pnl >= 0 ? "+" : ""}${pct.toFixed(2)}%</span></div>
+      </div>`;
+    }).join("");
+    const totalPct = totalInvested > 0 ? (totalPnl / totalInvested * 100) : 0;
+    const totalCls = totalPnl >= 0 ? "up" : "down";
+    el.innerHTML = `
+      <div style="padding:14px; border:2px solid ${totalPnl >= 0 ? "var(--up)" : "var(--down)"}; border-radius:10px; text-align:center; margin-bottom:10px;">
+        <div style="font-size:11px; color:var(--muted);">🎯 ${sym} — Trial Final Result (Current Rate: ₹${currentPrice.toFixed(2)})</div>
+        <div class="${totalCls}" style="font-size:22px; font-weight:800;">${totalPnl >= 0 ? "+" : ""}₹${totalPnl.toFixed(2)}</div>
+        <div class="${totalCls}" style="font-size:15px; font-weight:700;">${totalPnl >= 0 ? "+" : ""}${totalPct.toFixed(2)}%</div>
+      </div>
+      ${rows}
+      <div style="font-size:10px; color:var(--muted); margin-top:6px;">🎯 இது Trial/Practice Data மட்டும் — Real Money/Paytm Account Touch ஆகல்.</div>`;
+  }
+  const stockTrialPnlBtnEl = $("stockTrialPnlBtn");
+  if(stockTrialPnlBtnEl) stockTrialPnlBtnEl.addEventListener("click", renderStockTrialPnl);
+
   $("paytmLiveToggle").addEventListener("change", (e) => {
     const badge = $("paytmDryRunBadge");
     if(e.target.checked){
@@ -1165,6 +1891,454 @@
     const r = await paytmFetch("/paytm/order/place", { method:"POST", headers, body: JSON.stringify(body) });
     out.textContent = JSON.stringify(r, null, 2);
   });
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Quick Order Panel — explicit user instruction (Sep 2026, Tamil):
+  // per-stock, 15-min-Suggestion-linked order placement with live Fund
+  // matching. Pre-fills Buy/Sell/Stop-Loss from the CURRENT Pivot
+  // Suggestion for this stock; Quantity/Order-Type/Buy-vs-Sell are all
+  // user-editable — Take Order sends whatever is in the boxes at click
+  // time (edited values win over the auto-suggestion), per explicit
+  // instruction: "நான் Edit பண்ணி Apply பண்ற மாதிரி இருக்கணும்".
+  // ══════════════════════════════════════════════════════════════════
+  let qoTakeOrderState = null; // { sym, qty, price, txnType, securityId, totalCost }
+  let qoPendingTxnType = null; // "B"/"S" — set by the Buy/Sell chart buttons before navigating to a stock's page
+  let qoTradeMode = "trial"; // "trial" | "real" — explicit user instruction: defaults to Trial (safer)
+  async function initQuickOrderPanel(){
+    const sym = n50ActiveSym;
+    const connStatusEl = $("quickOrderConnStatus");
+    const bodyEl = $("quickOrderBody");
+    if(!sym || !connStatusEl || !bodyEl) return;
+    // 🆕 Trial Mode — explicit user instruction (Sep 2026, Tamil): "Real
+    // Fund Switch ஆக கூடாது". In Trial, we don't even check Paytm
+    // connection — practicing the flow shouldn't require a real,
+    // connected Paytm account at all.
+    if(qoTradeMode === "trial"){
+      connStatusEl.style.display = "none";
+      bodyEl.style.display = "block";
+    } else {
+      const st = await paytmFetch("/paytm/status");
+      if(!st || !st.connected){
+        connStatusEl.style.display = "block";
+        connStatusEl.textContent = "⚪ Paytm Money Connect ஆகல் — Main Dashboard-ல் கீழ Scroll பண்ணி 'Paytm Money' Section-ல் Connect பண்ணுங்க.";
+        bodyEl.style.display = "none";
+        return;
+      }
+      connStatusEl.style.display = "none";
+      bodyEl.style.display = "block";
+    }
+
+    // 🆕 If the person tapped 🟢Buy/🔴Sell from the "One Point of Contact"
+    // chart, pre-select that here and scroll straight to this panel —
+    // explicit instruction: "இந்த சார்ட்ல இருந்தே Buy/Sell Call எடுப்பேன்".
+    if(qoPendingTxnType){
+      const radio = document.querySelector(`input[name="qoTxnType"][value="${qoPendingTxnType}"]`);
+      if(radio) radio.checked = true;
+      qoPendingTxnType = null;
+      const panelEl = $("quickOrderPanel");
+      if(panelEl) setTimeout(() => panelEl.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+    }
+
+    // Pre-fill from the CURRENT Suggestion (same one shown in Investment
+    // Plan above) — only if the boxes are still at their defaults, so we
+    // don't clobber something the person already started editing.
+    const lv = computeTimeAlignedWeeklyPivotLevels(sym, getHHMM(Date.now())) || computeLiveWeeklyPivotLevels(sym);
+    if(lv){
+      if(!$("qoBuyPrice").dataset.userEdited) $("qoBuyPrice").value = lv.S1.toFixed(2);
+      if(!$("qoSellPrice").dataset.userEdited) $("qoSellPrice").value = lv.R1.toFixed(2);
+      if(!$("qoStopPrice").dataset.userEdited) $("qoStopPrice").value = lv.S2.toFixed(2);
+    }
+    updateQuickOrderFundCheck();
+    renderPositionTrackerStatus(); // show the full multi-company tracked list immediately, not just on the next 60s tick
+  }
+  async function updateQuickOrderFundCheck(){
+    const sym = n50ActiveSym;
+    if(!sym) return;
+    const qty = parseInt($("qoQuantity").value, 10) || 0;
+    const txnType = document.querySelector('input[name="qoTxnType"]:checked').value;
+    const price = parseFloat(txnType === "B" ? $("qoBuyPrice").value : $("qoSellPrice").value) || 0;
+    const statusEl = $("qoFundStatus");
+    const btn = $("qoTakeOrderBtn");
+    qoTakeOrderState = null;
+    if(!qty || !price){ statusEl.innerHTML = ""; btn.style.display = "none"; return; }
+    const totalCost = qty * price;
+
+    // 🆕 Trial Mode — explicit user instruction (Sep 2026, Tamil): "Real
+    // Fund Switch ஆக கூடாது, Small Virtual-Fund Badge கூட வேண்டாம்". No
+    // Paytm API calls at all here — just the arithmetic, and the button
+    // is always available (no real money, nothing to "run out of").
+    if(qoTradeMode === "trial"){
+      statusEl.innerHTML = `Total Cost (Trial): ₹${totalCost.toFixed(2)}
+        <div style="color:var(--gold); font-weight:700; margin-top:4px;">🎯 Trial Mode — Real Fund Check இல்ல, Free-ஆ Practice பண்ணலாம்</div>`;
+      btn.style.display = "block";
+      qoTakeOrderState = { sym, qty, price, txnType, securityId: null, totalCost };
+      return;
+    }
+
+    statusEl.innerHTML = `<span style="color:var(--muted);">Fund Balance Check ஆகுது…</span>`;
+    btn.style.display = "none";
+    const [fundsRes, secRes] = await Promise.all([
+      paytmFetch("/paytm/funds"),
+      paytmFetch(`/paytm/security-id?symbol=${encodeURIComponent(sym)}`)
+    ]);
+    // Response field names aren't 100% confirmed without a live test —
+    // tries the common variants; if none match, shows the fetch failed
+    // rather than silently guessing a wrong number.
+    // 🐛 FIX (Sep 2026): withdrawal_balance was wrongly included as a
+    // fallback here too (same bug already fixed in renderFundsFormatted)
+    // — Trading-Available and Withdrawal-Limit are different numbers,
+    // removed from this fallback chain.
+    let availableFunds = null;
+    if(fundsRes && fundsRes.ok && fundsRes.data){
+      const d = fundsRes.data;
+      availableFunds = d.available_cash ?? d.availableCash ?? d.net ?? d.cash_available ?? null;
+    }
+    const securityId = (secRes && secRes.ok) ? secRes.security_id : null;
+    if(availableFunds == null){
+      statusEl.innerHTML = `<div class="stock-empty">Fund Balance Fetch ஆகல் (${(fundsRes && (fundsRes.message||fundsRes.error)) || "unknown error"}).</div>`;
+      return;
+    }
+    if(!securityId){
+      statusEl.innerHTML = `<div class="stock-empty">Security ID கிடைக்கல் (${sym}) — ${(secRes && (secRes.message||secRes.error)) || "not found"}.</div>`;
+      return;
+    }
+    const withinFunds = totalCost <= availableFunds;
+    if(withinFunds){
+      statusEl.innerHTML = `Total Cost: ₹${totalCost.toFixed(2)} | Available Fund: ₹${availableFunds.toFixed(2)}
+        <div class="up" style="font-weight:700; margin-top:4px;">✅ Fund-க்குள்ள Match ஆகுது</div>`;
+      btn.style.display = "block";
+      qoTakeOrderState = { sym, qty, price, txnType, securityId, totalCost };
+    }else{
+      statusEl.innerHTML = `Total Cost: ₹${totalCost.toFixed(2)} | Available Fund: ₹${availableFunds.toFixed(2)}
+        <div class="down" style="font-weight:700; margin-top:4px;">⚠️ Fund Insufficient! Quantity குறைச்சு பாருங்க.</div>`;
+      btn.style.display = "none";
+    }
+  }
+  // 🆕 Debounced Input — explicit user instruction (Sep 2026, Tamil):
+  // "Typing Input Fast-ஆ இருக்கணும், Hanging Problem வரவே கூடாது". The
+  // bug: every keystroke was firing 2 network calls (Funds + Security
+  // ID) immediately — typing "100" fired 6 fetches back-to-back, which
+  // is exactly what causes this kind of lag/hang feeling. Now waits
+  // until typing PAUSES for 500ms before fetching — the box itself
+  // updates instantly (no lag felt while typing), only the network
+  // check is delayed.
+  let qoFundCheckDebounceTimer = null;
+  function scheduleQuickOrderFundCheck(){
+    if(qoFundCheckDebounceTimer) clearTimeout(qoFundCheckDebounceTimer);
+    qoFundCheckDebounceTimer = setTimeout(updateQuickOrderFundCheck, 500);
+  }
+  ["qoQuantity","qoBuyPrice","qoSellPrice"].forEach(id => {
+    $(id).addEventListener("input", (e) => { e.target.dataset.userEdited = "1"; scheduleQuickOrderFundCheck(); });
+  });
+  $("qoStopPrice").addEventListener("input", (e) => { e.target.dataset.userEdited = "1"; });
+  document.querySelectorAll('input[name="qoTxnType"]').forEach(el => el.addEventListener("change", updateQuickOrderFundCheck));
+  document.querySelectorAll('input[name="qoTradeMode"]').forEach(el => el.addEventListener("change", (e) => {
+    qoTradeMode = e.target.value;
+    const trialNotice = $("qoTrialModeNotice"), realNotice = $("qoRealModeNotice");
+    if(qoTradeMode === "trial"){
+      trialNotice.style.display = "block"; realNotice.style.display = "none";
+    } else {
+      trialNotice.style.display = "none"; realNotice.style.display = "block";
+    }
+    initQuickOrderPanel(); // re-check connection requirement + fund status for the new mode
+  }));
+  let qoTakeOrderInFlight = false; // silent guard — no visible button change, per explicit instruction
+  $("qoTakeOrderBtn").addEventListener("click", async () => {
+    if(!qoTakeOrderState){ alert("Fund Check முடியும் வரைக்கும் Wait பண்ணுங்க."); return; }
+    if(qoTakeOrderInFlight) return; // a rapid double-tap's 2nd tap is silently ignored — no visible change, no stacked dialogs
+    qoTakeOrderInFlight = true;
+    const orderType = document.querySelector('input[name="qoOrderType"]:checked').value;
+    const { sym, qty, price, txnType, securityId, totalCost } = qoTakeOrderState;
+
+    // ══════════════════════════════════════════════════════════════
+    // 🆕 TRIAL MODE branch — explicit user instruction (Sep 2026,
+    // Tamil): "Real Fund Switch ஆக கூடாது, Free-ஆ Practice பண்ணணும்".
+    // NO Paytm API calls at all (no live-rate fetch, no order/place) —
+    // uses the app's OWN already-cached live price (Yahoo-fed) and just
+    // records the trial trade locally, persisted in localStorage.
+    // ══════════════════════════════════════════════════════════════
+    if(qoTradeMode === "trial"){
+      const cached = n50Hist[sym];
+      const currentLive = (cached && cached.days && cached.days.length) ? cached.days[cached.days.length-1].close : price;
+      const sure = confirm(
+        `🎯 TRIAL ORDER (Real Money இல்ல, Practice மட்டும்)\n\n${txnType==="B"?"BUY":"SELL"} ${qty} x ${sym}\nOrder Type: ${orderType}${orderType==="LMT" ? ", Box Price: ₹"+price : " (Current Rate-ல்)"}\nTotal Cost (Trial): ₹${totalCost.toFixed(2)}\n\nஇது Simulation மட்டும் — Paytm Account/Real Fund எதுவும் Touch ஆகாது. Continue ஆ?`
+      );
+      if(!sure){ qoTakeOrderInFlight = false; return; }
+      const entryPrice = orderType === "LMT" ? price : currentLive;
+      recordTrialTrade(sym, qty, txnType, entryPrice);
+      const out = $("qoOrderOut");
+      out.style.display = "block";
+      out.textContent = `✅ Trial Order Recorded (No Real Money Used)\n${txnType==="B"?"BUY":"SELL"} ${qty} x ${sym} @ ₹${entryPrice.toFixed(2)}`;
+      qoTakeOrderInFlight = false;
+      startPositionTracking(sym, qty, txnType, true); // isTrial=true
+      return;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // REAL MODE — existing flow, unchanged.
+    // ══════════════════════════════════════════════════════════════
+    // 🆕 Live-Rate Re-Verification — explicit user instruction (Sep
+    // 2026, Tamil): "Panel Open பண்ணி Time எடுத்தா, Box-ல் இருக்குற Price
+    // Stale ஆகிடும், அந்த Lag-ஐ Overcome பண்ணுங்க". Fetches the CURRENT
+    // live rate at the EXACT click moment, silently (Button text/color
+    // does NOT change — explicit instruction: "எந்த கலர்லும் காட்டி
+    // நிக்கக்கூடாது") — the Confirm dialog below is the only visible
+    // step, kept as the Safer option.
+    const liveQ = await paytmFetch(`/paytm/quote?exchange=NSE&security_id=${encodeURIComponent(securityId)}`);
+    let liveRate = null;
+    if(liveQ && liveQ.ok && liveQ.data){
+      const d = liveQ.data;
+      liveRate = d.ltp ?? d.last_traded_price ?? d.lastTradedPrice ?? (Array.isArray(d) && d[0] && (d[0].ltp ?? d[0].last_traded_price)) ?? null;
+    }
+    const movedText = (liveRate != null)
+      ? (Math.abs(liveRate - price) > 0.01
+          ? `\n\n⚠️ Rate Moved! Box Price: ₹${price} → Current Live Rate: ₹${liveRate}`
+          : `\n\n✅ Live Rate Confirmed: ₹${liveRate} (Box Price-உடன் Match ஆகுது)`)
+      : `\n\n⚠️ Live Rate Fetch ஆகல் — Box Price (₹${price})-ஐ வெச்சே தொடர்றோம், ஆனா இது Stale-ஆ இருக்கலாம், Careful-ஆ Check பண்ணுங்க.`;
+
+    const sure = confirm(
+      `⚠️ REAL ORDER — Undo பண்ண முடியாது\n\n${txnType==="B"?"BUY":"SELL"} ${qty} x ${sym}\nOrder Type: ${orderType}${orderType==="LMT" ? ", Box Price: ₹"+price : " (Current Live Rate-ல் Execute ஆகும்)"}\nTotal Cost (Approx): ₹${totalCost.toFixed(2)}${movedText}\n\nஇது உண்மையான Money-ல Execute ஆகும். Confirm ஆ?`
+    );
+    if(!sure){ qoTakeOrderInFlight = false; return; }
+    const out = $("qoOrderOut");
+    out.style.display = "block";
+    out.textContent = "Order Send ஆகுது…";
+    const body = {
+      txn_type: txnType, exchange: "NSE", segment: "E", product: "C",
+      security_id: securityId, quantity: qty, validity: "DAY",
+      order_type: orderType, price: orderType === "LMT" ? price : 0, off_mkt_flag: false,
+      dry_run: false,
+    };
+    const r = await paytmFetch("/paytm/order/place", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-confirm": "PLACE-REAL-ORDER" },
+      body: JSON.stringify(body)
+    });
+    out.textContent = JSON.stringify(r, null, 2);
+    qoTakeOrderInFlight = false;
+    // 🆕 Start 15-min Position Tracking — explicit user instruction (Sep
+    // 2026, Tamil): "13th மினிட் ஒரு அலர்ட் வரணும் — Continue பண்ணணுமா".
+    // Order Success ஆனா மட்டும் Track ஆரம்பிக்கும்.
+    if(r && r.ok){
+      startPositionTracking(sym, qty, txnType, false); // isTrial=false
+    }
+  });
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 13th-Minute Continue Alert — explicit user instruction (Sep 2026,
+  // Tamil): "நான் ஒரு 15-min Trade எடுத்து, அதை Continue பண்ண
+  // விரும்பினால், 13வது நிமிடத்தில் ஒரு Alert வரணும் — Continue தட்டினா
+  // Continue ஆகணும்". ⚠️ Safety Scope: this is a purely APP-SIDE
+  // reminder/tracker — "Continue" only extends the app's own tracking
+  // window by another 15 minutes; it does NOT place any new Buy/Sell
+  // order automatically at the broker. Actually closing/adjusting the
+  // position always stays a deliberate, manual action via the same Take
+  // Order panel (Sell) — auto-placing a SECOND real-money order without
+  // fresh confirmation each time would be genuinely dangerous.
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Explicit user instruction (Sep 2026, Tamil): "இது ஒரு Stock-க்கு
+  // மட்டும் பொருந்தாது — ரெண்டு மூணு Companies-லிருந்து Call
+  // கொடுத்தாலும் எல்லாத்துக்குமே Applicable-ஆ இருக்கணும்". Switched from
+  // a single `activePosition` object to a LIST — each tracked company
+  // has its own independent window boundary/alert cycle, so taking
+  // calls on 3 different stocks tracks all 3 in parallel, correctly.
+  let activePositions = []; // [{ sym, qty, txnType, windowEndAt, alertedForThisWindow, isTrial }, ...]
+
+  // 🆕 Trial Trades — explicit user instruction (Sep 2026, Tamil):
+  // "Trial Mode-ல் எத்தனை வேணும்னாலும் Practice பண்ணலாம், Real Fund
+  // Touch ஆகக்கூடாது". Persisted in localStorage (separate key from
+  // anything Paytm-related) — purely a local record of practice trades,
+  // never sent to any server.
+  const LS_TRIAL_TRADES_KEY = "marketStatus_trialTrades_v1";
+  function loadTrialTrades(){ try{ return JSON.parse(localStorage.getItem(LS_TRIAL_TRADES_KEY) || "[]"); }catch(e){ return []; } }
+  function saveTrialTrades(){ try{ localStorage.setItem(LS_TRIAL_TRADES_KEY, JSON.stringify(trialTrades)); }catch(e){} }
+  let trialTrades = loadTrialTrades(); // [{ sym, qty, txnType, entryPrice, timestamp }, ...]
+
+  // 🆕 Trial Adjustments Ledger — explicit user instruction (Sep 2026,
+  // Tamil): "Reset பண்ணும்போது Trade History Delete ஆகக்கூடாது, Fund
+  // Balance மட்டும் 1 Lakh-க்கு Top-Up ஆகணும் — அதாவது 70,000-ல் இருந்தா
+  // 30,000 Add பண்ணி 1 Lakh கொண்டு வரணும், Trade P&L Records அப்படியே
+  // இருக்கணும்". This is a SEPARATE running total from trialTrades —
+  // "Reset" adds a compensating +amount entry here (never touches or
+  // deletes the trade history), so past trades' individual P&L stays
+  // visible/intact forever, only the overall FUND BALANCE gets topped up.
+  const LS_TRIAL_ADJUSTMENTS_KEY = "marketStatus_trialAdjustments_v1";
+  function loadTrialAdjustments(){ try{ return JSON.parse(localStorage.getItem(LS_TRIAL_ADJUSTMENTS_KEY) || "[]"); }catch(e){ return []; } }
+  function saveTrialAdjustments(){ try{ localStorage.setItem(LS_TRIAL_ADJUSTMENTS_KEY, JSON.stringify(trialAdjustments)); }catch(e){} }
+  let trialAdjustments = loadTrialAdjustments(); // [{ amount, timestamp, reason }, ...]
+  function totalTrialAdjustments(){ return trialAdjustments.reduce((s,a) => s + a.amount, 0); }
+  function recordTrialTrade(sym, qty, txnType, entryPrice){
+    trialTrades.push({ sym, qty, txnType, entryPrice, timestamp: Date.now() });
+    if(trialTrades.length > 200) trialTrades.splice(0, trialTrades.length - 200); // generous cap
+    saveTrialTrades();
+  }
+
+  // 🆕 Trial Fund (₹1 Lakh Base) — explicit user instruction (Sep 2026,
+  // Tamil): "Trial Mode Fund-க்கு 1 Lakh Fix பண்ணுங்க, நான் Play பண்ண
+  // பண்ண அது Increase/Decrease ஆகணும், Real Money-உடன் எந்த சம்பந்தமும்
+  // இருக்கக்கூடாது". Trial Fund = ₹1,00,000 (Fixed Base) + Live P&L
+  // across EVERY trial trade (all stocks combined) — a DERIVED value,
+  // always recalculated from trialTrades + current cached (Yahoo-fed)
+  // prices, so it naturally rises/falls as trades move — never touches
+  // Paytm's real Funds API in any way.
+  const TRIAL_FUND_BASE = 100000;
+  function computeTrialConsolidatedPnl(){
+    let totalPnl = 0, totalInvested = 0;
+    const perStock = {};
+    trialTrades.forEach(t => {
+      const cached = n50Hist[t.sym];
+      const currentPrice = (cached && cached.days && cached.days.length) ? cached.days[cached.days.length-1].close : null;
+      if(currentPrice == null) return; // skip trades whose stock hasn't been fetched yet — noted in the UI
+      const invested = t.qty * t.entryPrice;
+      const pnl = t.txnType === "B" ? (currentPrice - t.entryPrice) * t.qty : (t.entryPrice - currentPrice) * t.qty;
+      totalPnl += pnl; totalInvested += invested;
+      const bucket = perStock[t.sym] || (perStock[t.sym] = { pnl:0, invested:0, count:0 });
+      bucket.pnl += pnl; bucket.invested += invested; bucket.count++;
+    });
+    return { totalPnl, totalInvested, perStock };
+  }
+  function computeTrialFundBalance(){
+    return TRIAL_FUND_BASE + computeTrialConsolidatedPnl().totalPnl + totalTrialAdjustments();
+  }
+  // 🆕 Reset — REDESIGNED per explicit user correction (Sep 2026, Tamil):
+  // "Reset பண்ணும்போது Trial P&L Reset ஆகக்கூடாது — Fund Loss-ல இருந்தா
+  // மட்டும் Top-Up பண்ணி 1 Lakh கொண்டு வரணும், Profit-ல இருந்தா Reset
+  // கொடுக்க மாட்டேன் (எனவே அப்போ ஒண்ணும் பண்ணாதீங்க)". Trade history
+  // (trialTrades) is NEVER touched/cleared anymore — only an adjustment
+  // entry is added when the balance is below ₹1,00,000.
+  function resetTrialFund(){
+    const currentBalance = computeTrialFundBalance();
+    if(currentBalance >= TRIAL_FUND_BASE){
+      alert(`🎯 Trial Fund இப்போ ₹${currentBalance.toFixed(2)} — இது ₹1,00,000-க்கு மேலயோ சமமாவோ இருக்கு. Top-Up தேவையில்ல, எதுவும் மாற்றல்.`);
+      return;
+    }
+    const shortfall = TRIAL_FUND_BASE - currentBalance;
+    const sure = confirm(`🔄 Trial Fund இப்போ ₹${currentBalance.toFixed(2)}-ஆ இருக்கு.\n\n₹${shortfall.toFixed(2)} Top-Up பண்ணி, ₹1,00,000-க்கு கொண்டு வரப் போறோம்.\n\n⚠️ Trade History/Trial P&L Records எதுவும் Delete ஆகாது — இது ஒரு Top-Up Adjustment மட்டும். Confirm ஆ?`);
+    if(!sure) return;
+    trialAdjustments.push({ amount: shortfall, timestamp: Date.now(), reason: "reset-topup" });
+    saveTrialAdjustments();
+    alert(`✅ ₹${shortfall.toFixed(2)} Top-Up ஆயிடுச்சு. Trial Fund இப்போ ₹${computeTrialFundBalance().toFixed(2)}.`);
+  }
+
+  let qoBannerPosition = null; // which entry the currently-shown banner belongs to
+  function nextQuarterHourBoundary(fromMs){
+    const QUARTER_MS = 15 * 60 * 1000;
+    return Math.ceil(fromMs / QUARTER_MS) * QUARTER_MS;
+  }
+  function startPositionTracking(sym, qty, txnType, isTrial){
+    const now = Date.now();
+    activePositions = activePositions.filter(p => p.sym !== sym || p.isTrial !== !!isTrial); // replace existing tracking for this same stock+mode
+    activePositions.push({ sym, qty, txnType, windowEndAt: nextQuarterHourBoundary(now), alertedForThisWindow: false, isTrial: !!isTrial });
+    renderPositionTrackerStatus();
+  }
+  function checkPositionContinueAlert(){
+    renderPositionTrackerStatus();
+    const now = Date.now();
+    // Snapshot the list before iterating — triggerContinueFlow can
+    // mutate/remove entries (Stop) or the array itself (native confirm
+    // fallback path), so we iterate a fixed copy for this tick.
+    activePositions.slice().forEach(pos => {
+      const msLeft = pos.windowEndAt - now;
+      // 🐛 CORRECTED (per user's valid catch): alerting 2 minutes EARLY
+      // was asking to "edit next window's suggestion" before that
+      // suggestion even exists yet. Fires exactly AT the boundary, once
+      // the NEW window's real, freshly-calculated Suggestion exists.
+      if(!pos.alertedForThisWindow && msLeft <= 0){
+        pos.alertedForThisWindow = true;
+        triggerContinueFlow(pos);
+      }
+    });
+    renderPositionTrackerStatus();
+  }
+  function triggerContinueFlow(pos){
+    const onThisStockPage = (n50ActiveSym === pos.sym) && $("n50FormView") && $("n50FormView").style.display !== "none";
+    if(onThisStockPage){
+      showContinueBanner(pos);
+    } else {
+      // Fallback — not on THIS stock's page right now (could be on a
+      // different tracked stock's page, or the list screen), so no
+      // editable boxes for this one are visible. Native confirm() with
+      // the fresh Suggestion, text-only — blocking, so nothing changes
+      // while it's open (old value stays "active" while thinking).
+      const lv = computeTimeAlignedWeeklyPivotLevels(pos.sym, getHHMM(Date.now())) || computeLiveWeeklyPivotLevels(pos.sym);
+      const suggText = lv ? `🟢Buy: ₹${lv.S1.toFixed(2)} | 🔴Sell: ₹${lv.R1.toFixed(2)} | 🛑SL: ₹${lv.S2.toFixed(2)}` : "Suggestion இன்னும் கிடைக்கல்.";
+      const wantsContinue = confirm(
+        `⏱️ ${pos.sym} — புது 15-min Window Start ஆச்சு\n\nFresh Suggestion:\n${suggText}\n\n(Edit பண்ண வேணும்னா, அந்த Stock-ஓட Page-க்கு போய் இதே Window-க்குள்ளேயே பாருங்க)\n\nContinue பண்ணணுமா?`
+      );
+      if(wantsContinue){
+        pos.windowEndAt = nextQuarterHourBoundary(Date.now());
+        pos.alertedForThisWindow = false;
+      } else {
+        activePositions = activePositions.filter(p => p !== pos);
+      }
+      renderPositionTrackerStatus();
+    }
+  }
+  function showContinueBanner(pos){
+    const sym = pos.sym;
+    const lv = computeTimeAlignedWeeklyPivotLevels(sym, getHHMM(Date.now())) || computeLiveWeeklyPivotLevels(sym);
+    if(lv){
+      // Presenting the FRESH, official new-window Suggestion for review —
+      // clears any earlier "userEdited" flag so this genuinely reflects
+      // the new window's own values, per explicit instruction.
+      $("qoBuyPrice").value = lv.S1.toFixed(2); delete $("qoBuyPrice").dataset.userEdited;
+      $("qoSellPrice").value = lv.R1.toFixed(2); delete $("qoSellPrice").dataset.userEdited;
+      $("qoStopPrice").value = lv.S2.toFixed(2); delete $("qoStopPrice").dataset.userEdited;
+      updateQuickOrderFundCheck();
+    }
+    qoBannerPosition = pos;
+    const banner = $("qoContinueBanner");
+    if(banner) banner.style.display = "block";
+  }
+  const qoContinueBtnEl = $("qoContinueBtn");
+  if(qoContinueBtnEl) qoContinueBtnEl.addEventListener("click", () => {
+    // Locks in whatever is CURRENTLY in the boxes (person's edit, or the
+    // fresh auto-fill if they didn't touch it) as the running values for
+    // the new window. Does NOT place any order automatically — per the
+    // confirmed Safe Option, taking an order for this window still needs
+    // a separate, explicit "Take Order" tap.
+    if(qoBannerPosition){
+      qoBannerPosition.windowEndAt = nextQuarterHourBoundary(Date.now());
+      qoBannerPosition.alertedForThisWindow = false;
+    }
+    qoBannerPosition = null;
+    $("qoContinueBanner").style.display = "none";
+    renderPositionTrackerStatus();
+  });
+  const qoStopBtnEl = $("qoStopBtn");
+  if(qoStopBtnEl) qoStopBtnEl.addEventListener("click", () => {
+    if(qoBannerPosition) activePositions = activePositions.filter(p => p !== qoBannerPosition);
+    qoBannerPosition = null;
+    $("qoContinueBanner").style.display = "none";
+    renderPositionTrackerStatus();
+  });
+  function renderPositionTrackerStatus(){
+    const el = $("qoPositionTrackerStatus");
+    if(!el) return;
+    if(!activePositions.length){ el.textContent = ""; return; }
+    // Shows ALL tracked companies (not just the one on the current
+    // page) — explicit instruction: "எல்லாத்துக்குமே Applicable-ஆ
+    // இருக்கணும்". The current stock's entry (if any) is marked.
+    el.innerHTML = activePositions.map(pos => {
+      const minsLeft = Math.max(0, Math.ceil((pos.windowEndAt - Date.now()) / 60000));
+      const isHere = pos.sym === n50ActiveSym ? " 📍(இந்த Page)" : "";
+      const trialTag = pos.isTrial ? " 🎯TRIAL" : "";
+      return `${pos.isTrial ? "🟡" : "🔵"} ${pos.txnType === "B" ? "BUY" : "SELL"} ${pos.qty} x ${pos.sym}${trialTag} — ~${minsLeft} நிமிடம்${isHere}`;
+    }).join("<br>");
+  }
+  setInterval(checkPositionContinueAlert, 60 * 1000); // check once a minute — fine-grained enough for a 2-min warning window
+
+  // 🆕 Periodic Quick Order Panel Refresh — explicit user instruction
+  // (Sep 2026, Tamil): "Panel Open-ஆ இருந்து Time எடுத்தா, Box Stale
+  // ஆகிடும் Lag-ஐ Overcome பண்ணுங்க". Re-runs every 60s while a stock
+  // page is open — respects dataset.userEdited, so it never overwrites
+  // a value the person already started editing (only fills in what's
+  // still at its auto-filled default).
+  setInterval(() => {
+    if(n50ActiveSym && $("n50FormView") && $("n50FormView").style.display !== "none"){
+      initQuickOrderPanel();
+    }
+  }, 60 * 1000);
 
   paytmRefreshStatus();
   setInterval(paytmRefreshStatus, 15000);
@@ -1294,12 +2468,80 @@
       for(let i=0;i<ts.length;i++){
         if(opens[i] == null || closes[i] == null) continue;
         const dt = new Date(ts[i]*1000);
-        days.push({ date: dt.toLocaleDateString("en-IN", { day:"2-digit", month:"short" }), open: opens[i], close: closes[i], high: (highs[i]==null?Math.max(opens[i],closes[i]):highs[i]), low: (lows[i]==null?Math.min(opens[i],closes[i]):lows[i]) });
+        days.push({ date: dt.toLocaleDateString("en-IN", { day:"2-digit", month:"short" }), dateKey: getIstDateStr(ts[i]*1000), open: opens[i], close: closes[i], high: (highs[i]==null?Math.max(opens[i],closes[i]):highs[i]), low: (lows[i]==null?Math.min(opens[i],closes[i]):lows[i]) });
       }
       if(!days.length) return { ok:false };
       return { ok:true, days };
     }catch(e){
       return { ok:false };
+    }
+  }
+
+  // 🆕 One-time Intraday Backfill — explicit user instruction (Sep 2026,
+  // Tamil): "7 நாள் Wait பண்ண வேண்டாம், Yahoo-ல் இருந்தே அந்த Past Days-
+  // ஓட 15-min Data-ஐ வாங்கி கொடுங்க". Yahoo's chart API also serves
+  // historical INTRADAY bars (interval=15m), not just daily bars — up
+  // to around 60 days back. So instead of waiting ~7 trading days for
+  // recordIntradayTick() to organically build up same-time-of-day
+  // history, this fetches it ONCE, directly, for every stock.
+  async function fetchIntraday15mBars(symbol){
+    const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=15m&range=60d`;
+    try{
+      const json = await fetchViaProxiesParallel(yahooUrl, PROXY_TIMEOUT_MS);
+      if(!json) return null;
+      const result = json.chart && json.chart.result && json.chart.result[0];
+      if(!result) return null;
+      const ts = result.timestamp || [];
+      const quote = (result.indicators && result.indicators.quote && result.indicators.quote[0]) || {};
+      const closes = quote.close || [];
+      const out = [];
+      for(let i=0;i<ts.length;i++){
+        if(closes[i] == null) continue;
+        const ms = ts[i] * 1000;
+        out.push({ dateKey: getIstDateStr(ms), hhmm: getHHMM(ms), price: closes[i] });
+      }
+      return out;
+    }catch(e){
+      return null;
+    }
+  }
+  function formatHHMMLabel(hhmm){
+    let hh = parseInt(hhmm.slice(0,2), 10);
+    const mm = hhmm.slice(2,4);
+    const ampm = hh >= 12 ? "PM" : "AM";
+    let hh12 = hh % 12; if(hh12 === 0) hh12 = 12;
+    return `${String(hh12).padStart(2,"0")}:${mm} ${ampm}`;
+  }
+  const LS_INTRADAY_BACKFILL_DONE_KEY = "marketStatus_intradayBackfillDone_v1";
+  function isIntradayBackfillDone(){ try{ return localStorage.getItem(LS_INTRADAY_BACKFILL_DONE_KEY) === "1"; }catch(e){ return false; } }
+  function markIntradayBackfillDone(){ try{ localStorage.setItem(LS_INTRADAY_BACKFILL_DONE_KEY, "1"); }catch(e){} }
+  let intradayBackfillRunning = false;
+  async function backfillIntradayHistoryOnce(){
+    if(isIntradayBackfillDone() || intradayBackfillRunning) return;
+    intradayBackfillRunning = true;
+    try{
+      const todayStr = getIstDateStr(Date.now());
+      await fetchInChunks(stockList, async ([sym]) => {
+        const bars = await fetchIntraday15mBars(encodeURIComponent(sym) + ".NS");
+        if(!bars || !bars.length) return;
+        const symHist = intradayHistory[sym] || (intradayHistory[sym] = {});
+        bars.forEach(b => {
+          if(b.dateKey === todayStr) return; // today is handled live by recordIntradayTick — skip to avoid duplicates
+          const arr = symHist[b.dateKey] || (symHist[b.dateKey] = []);
+          if(!arr.some(t => t.hhmm === b.hhmm)){
+            arr.push({ hhmm: b.hhmm, time: formatHHMMLabel(b.hhmm), price: b.price, pct: null });
+          }
+        });
+        Object.keys(symHist).forEach(dk => symHist[dk].sort((a,b) => a.hhmm.localeCompare(b.hhmm)));
+        const dateKeys = Object.keys(symHist).sort();
+        if(dateKeys.length > INTRADAY_HISTORY_MAX_DATES){
+          dateKeys.slice(0, dateKeys.length - INTRADAY_HISTORY_MAX_DATES).forEach(k => delete symHist[k]);
+        }
+      }, 6);
+      saveIntradayHistory();
+      markIntradayBackfillDone();
+    } finally {
+      intradayBackfillRunning = false;
     }
   }
 
@@ -1431,6 +2673,8 @@
     $("n50Hist3").innerHTML = renderHistRows(days.slice(-3));
     renderN50Charts(days);
     renderInvestmentPlan(days);
+    renderOtherIndicators(days);
+    initQuickOrderPanel();
   }
 
   // ── 🆕 கடைசி 7/3 நாட்கள் Candle/Line Chart — explicit user instruction
@@ -1459,16 +2703,32 @@
   // AND its High actually reached the R1 Sell-Zone (both legs of the
   // suggestion genuinely played out). This is a factual look-back at
   // real past data — never a promise about tomorrow.
-  function backtestPivotSuccess(days){
+  function backtestPivotSuccess(days, lastEntryIsLive){
+    if(lastEntryIsLive === undefined) lastEntryIsLive = true; // default matches existing callers (Yahoo-fed, still-updating today bar)
     let success = 0, total = 0;
+    const perDay = [];
     for(let i=1;i<days.length;i++){
       const prev = days[i-1], today = days[i];
+      // 🆕 Explicit user instruction (Sep 2026, Tamil): today's own bar
+      // (the last entry — still forming until the market actually
+      // closes) must NOT be tested until we've confirmed the market
+      // genuinely closed AND a full final 15-min refresh tick already
+      // landed before that close (see n50TodayConfirmedFinal above) —
+      // otherwise the Strike Rate keeps changing on partial data.
+      // Only applies when the caller says the last entry COULD be a
+      // live/unfinished bar (lastEntryIsLive=true); a caller passing its
+      // own already-settled history (lastEntryIsLive=false) skips this —
+      // every entry there was appended only after being confirmed final.
+      const isTodaysStillFormingBar = lastEntryIsLive && (i === days.length - 1) && !n50TodayConfirmedFinal;
+      if(isTodaysStillFormingBar) continue;
       const lv = computePivotLevels(prev);
       if(!lv || today.low == null || today.high == null) continue;
       total++;
-      if(today.low <= lv.S1 && today.high >= lv.R1) success++;
+      const ok = (today.low <= lv.S1 && today.high >= lv.R1);
+      if(ok) success++;
+      perDay.push({ date: today.date, success: ok });
     }
-    return { success, total, fail: total - success };
+    return { success, total, fail: total - success, perDay };
   }
   function renderStrikeRate(containerId, days){
     const el = $(containerId);
@@ -1539,19 +2799,465 @@
     const R2 = P + (H - L), S2 = P - (H - L);
     return { P, R1, S1, R2, S2, basedOnDate: day.date };
   }
+  // 🆕 Live Weekly Pivot Levels — explicit user instruction (Sep 2026,
+  // Tamil): "ஒவ்வொரு 15-min Tick-க்கும், அந்த Start ஆகுற Time-ல் இருந்து
+  // 7 Days Analyse பண்ணி Buy/Sell/Stop-Loss கொடுக்கணும் — இன்றைக்கு
+  // Market எப்படி Move ஆகுதோ, அது Real-Time-ஆ இதுல Reflect ஆகணும்".
+  // While the market is genuinely open right now, blends the last 6
+  // CONFIRMED-FINAL days (stable) with TODAY's own still-forming bar
+  // (live — its High/Low/Close keep updating every tick) as the 7th day,
+  // so this recalculates fresh on every 15-min autoRefreshAllN50 tick
+  // (renderN50FormData → renderInvestmentPlan already re-runs then).
+  // Once market is NOT live (weekend/holiday, or before/after today is
+  // confirmed closed), falls back to the last 7 already-CONFIRMED days
+  // only (today's own bar, once confirmed, is already inside that list —
+  // no double-counting).
+  function computeLiveWeeklyPivotLevels(sym){
+    const confirmedDays = ownDailyHistory[sym] || [];
+    const cached = n50Hist[sym];
+    const marketLiveNow = isNseMarketOpenNow();
+    let windowDays;
+    if(marketLiveNow && cached && cached.days && cached.days.length){
+      const last6Confirmed = confirmedDays.slice(-6);
+      const liveTodayBar = cached.days[cached.days.length - 1]; // today's still-forming bar — updates every tick
+      windowDays = last6Confirmed.concat([{ date: liveTodayBar.date, open: liveTodayBar.open, high: liveTodayBar.high, low: liveTodayBar.low, close: liveTodayBar.close }]);
+    }else{
+      windowDays = confirmedDays.slice(-7); // market not live right now — use the stable, fully-confirmed 7-day window
+    }
+    if(windowDays.length < 7) return null; // need a full 7 days (confirmed, or 6 confirmed + today live) before this is meaningful
+    let H = -Infinity, L = Infinity;
+    windowDays.forEach(d => {
+      if(d.high != null && d.high > H) H = d.high;
+      if(d.low != null && d.low < L) L = d.low;
+    });
+    const lastDay = windowDays[windowDays.length - 1];
+    const C = lastDay ? lastDay.close : null;
+    if(H === -Infinity || L === Infinity || C == null) return null;
+    const P = (H + L + C) / 3;
+    const R1 = 2*P - L, S1 = 2*P - H;
+    const R2 = P + (H - L), S2 = P - (H - L);
+    return { P, R1, S1, R2, S2, basedOnDate: `${windowDays[0].date} – ${lastDay.date}${marketLiveNow ? " (Live)" : ""}`, daysUsed: windowDays.length };
+  }
   function renderInvestmentPlan(days){
     const el = $("n50InvestPlan");
     if(!el) return;
-    const last = days[days.length - 1];
-    const levels = last ? computePivotLevels(last) : null;
-    if(!levels){ el.innerHTML = `<div class="stock-empty">Plan கணக்கிட High/Low/Close Data கிடைக்கல்.</div>`; return; }
-    el.innerHTML = `<div style="font-size:10.5px; color:var(--muted); margin-bottom:8px;">அடிப்படை: ${levels.basedOnDate}-ன் High/Low/Close (Pivot Point Method)</div>` +
+    const nowHHMM = n50ActiveSym ? getHHMM(Date.now()) : null;
+    const levels = n50ActiveSym ? (computeTimeAlignedWeeklyPivotLevels(n50ActiveSym, nowHHMM) || computeLiveWeeklyPivotLevels(n50ActiveSym)) : null;
+    if(!levels){
+      const have = (n50ActiveSym && ownDailyHistory[n50ActiveSym]) ? ownDailyHistory[n50ActiveSym].length : 0;
+      el.innerHTML = `<div class="stock-empty">Last 7 Working Days Confirmed Data இன்னும் போதாது (இப்போ ${have}/7 நாட்கள் Collect ஆகி இருக்கு) — ஒவ்வொரு நாளும் Market Confirm-ஆ Close ஆனதுக்கு அப்புறம் தானா 1 நாள் சேரும்.</div>`;
+      return;
+    }
+    el.innerHTML = `<div style="font-size:10.5px; color:var(--muted); margin-bottom:8px;">அடிப்படை: ${levels.basedOnDate} High/Low/Close — Weekly Pivot Point Method</div>` +
       `<div class="plan-session">
         <div class="ptime">🕐 ${INVEST_PLAN_SLOT.label}</div>
         <div class="prow"><span class="pl">🟢 Buy-Zone Reference (S1)</span><span class="pv nums up">${fmt(levels.S1)}</span></div>
         <div class="prow"><span class="pl">🔴 Sell/Book-Profit Reference (R1)</span><span class="pv nums down">${fmt(levels.R1)}</span></div>
         <div class="prow"><span class="pl">🛑 Stop-Loss Reference (S2)</span><span class="pv nums">${fmt(levels.S2)}</span></div>
       </div>`;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 4 Additional Standard Indicators — explicit user instruction (Sep
+  // 2026, Tamil): "SuperTrend, Bollinger Bands, ATR Stop-Loss, ORB — 4-
+  // உம் 50 Stocks-க்கும் ஒவ்வொரு 15-min-க்கும் Suggestion கொடுங்க, எது
+  // Useful-ன்னு நானே Compare பண்ணிக்கிறேன்". Each is a well-known,
+  // textbook technical-analysis formula (not invented here) — computed
+  // from the same daily OHLC history (`n50Hist[sym].days`, Yahoo-fed,
+  // today's own bar included and updating live — that is standard/
+  // expected for these indicators, unlike the Pivot Suggestion above
+  // which needed a stable same-time-of-day basis). ⚠️ No historical
+  // Strike Rate backtest for these yet (only the Pivot Suggestion has
+  // one) — these show LIVE signals only, refreshed every 15-min tick.
+  // ══════════════════════════════════════════════════════════════════
+
+  // Average True Range — standard volatility measure.
+  //   True Range = max(High−Low, |High−PrevClose|, |Low−PrevClose|)
+  //   ATR = simple average of True Range over the last `period` days
+  // (Simple Moving Average version — not Wilder's smoothing — kept this
+  // way so the formula stays fully explainable in one line, per this
+  // app's honesty-first convention elsewhere.)
+  function computeATR(days, period){
+    period = period || 14;
+    if(!days || days.length < period + 1) return null;
+    const trs = [];
+    for(let i=1;i<days.length;i++){
+      const cur = days[i], prev = days[i-1];
+      if(cur.high == null || cur.low == null || prev.close == null) continue;
+      trs.push(Math.max(cur.high - cur.low, Math.abs(cur.high - prev.close), Math.abs(cur.low - prev.close)));
+    }
+    if(trs.length < period) return null;
+    const lastN = trs.slice(-period);
+    return lastN.reduce((a,b) => a+b, 0) / lastN.length;
+  }
+
+  // SuperTrend — ATR-based trend-following line (multiplier=3, period=10
+  // are the commonly used textbook defaults). Sequentially "trails"
+  // behind price: while price stays above the line, line = Final Lower
+  // Band (Uptrend); once price closes below it, line flips to Final
+  // Upper Band (Downtrend), and vice versa.
+  function computeSuperTrend(days, period, multiplier){
+    period = period || 10; multiplier = multiplier || 3;
+    if(!days || days.length < period + 2) return null;
+    const trs = [null];
+    for(let i=1;i<days.length;i++){
+      const cur = days[i], prev = days[i-1];
+      if(cur.high == null || cur.low == null || prev.close == null){ trs.push(null); continue; }
+      trs.push(Math.max(cur.high - cur.low, Math.abs(cur.high - prev.close), Math.abs(cur.low - prev.close)));
+    }
+    function atrAt(idx){
+      if(idx < period) return null;
+      const w = trs.slice(idx - period + 1, idx + 1);
+      if(w.some(v => v == null)) return null;
+      return w.reduce((a,b) => a+b, 0) / period;
+    }
+    let finalUpper = null, finalLower = null, trendUp = true, superTrendVal = null;
+    for(let i=period;i<days.length;i++){
+      const atr = atrAt(i);
+      if(atr == null || days[i].high == null || days[i].low == null) continue;
+      const d = days[i];
+      const basicUpper = (d.high + d.low)/2 + multiplier*atr;
+      const basicLower = (d.high + d.low)/2 - multiplier*atr;
+      if(finalUpper == null){ finalUpper = basicUpper; finalLower = basicLower; }
+      else{
+        const prevClose = days[i-1].close;
+        finalUpper = (basicUpper < finalUpper || prevClose > finalUpper) ? basicUpper : finalUpper;
+        finalLower = (basicLower > finalLower || prevClose < finalLower) ? basicLower : finalLower;
+      }
+      if(d.close != null && d.close <= finalUpper){ trendUp = false; superTrendVal = finalUpper; }
+      else{ trendUp = true; superTrendVal = finalLower; }
+    }
+    if(superTrendVal == null) return null;
+    return { value: superTrendVal, trendUp, basedOnDate: days[days.length-1].date };
+  }
+
+  // Bollinger Bands — SMA(period) ± stdMultiplier × Standard Deviation.
+  function computeBollingerBands(days, period, stdMultiplier){
+    period = period || 20; stdMultiplier = stdMultiplier || 2;
+    if(!days || days.length < period) return null;
+    const closes = days.slice(-period).map(d => d.close).filter(c => c != null);
+    if(closes.length < period) return null;
+    const mean = closes.reduce((a,b) => a+b, 0) / period;
+    const variance = closes.reduce((a,b) => a + (b-mean)*(b-mean), 0) / period;
+    const std = Math.sqrt(variance);
+    return { middle: mean, upper: mean + stdMultiplier*std, lower: mean - stdMultiplier*std, basedOnDate: days[days.length-1].date };
+  }
+
+  // ATR-based Dynamic Stop-Loss — Current Price − (multiplier × ATR).
+  function computeATRStopLoss(days, currentPrice, period, multiplier){
+    period = period || 14; multiplier = multiplier || 1.5;
+    const atr = computeATR(days, period);
+    if(atr == null || currentPrice == null) return null;
+    return { atr, stopLoss: currentPrice - multiplier*atr, basedOnDate: days[days.length-1].date };
+  }
+
+  // Opening Range Breakout (ORB) — High/Low of the first 30 minutes
+  // (09:15–09:45 IST) of TODAY, using our own intradayHistory ticks.
+  // Current price above that range = Bullish Breakout; below = Bearish
+  // Breakdown; still inside = Neutral.
+  function computeORB(sym){
+    const todayStr = getIstDateStr(Date.now());
+    const ticks = (intradayHistory[sym] && intradayHistory[sym][todayStr]) || [];
+    if(!ticks.length) return null;
+    const openingTicks = ticks.filter(t => t.hhmm <= "0945");
+    if(!openingTicks.length) return null;
+    let hi = -Infinity, lo = Infinity;
+    openingTicks.forEach(t => { if(t.price > hi) hi = t.price; if(t.price < lo) lo = t.price; });
+    const current = ticks[ticks.length - 1].price;
+    let signal = "⚪ Neutral — Opening Range-க்குள்ளேயே";
+    if(current > hi) signal = "🟢 Bullish Breakout (Buy Bias)";
+    else if(current < lo) signal = "🔴 Bearish Breakdown (Sell Bias)";
+    return { high: hi, low: lo, current, signal };
+  }
+
+  // 🆕 Rolling Range Breakout — explicit user instruction (Sep 2026,
+  // Tamil): "கடைசி 30 நிமிடம் Data-க்கு ஏத்தவாறு மாறணும்" — a SECOND,
+  // complementary signal alongside the Fixed Opening Range above (that
+  // one stays fixed at 9:15-9:45 all day; this one keeps sliding). Uses
+  // the last ROLLING_WINDOW_TICKS ticks (4 ticks ≈ 60 min — kept wider
+  // than the literal "30 min/2 ticks" ask, since a 2-point range is too
+  // noisy/unstable to call a meaningful "range" — this is an honest
+  // safety adjustment, explained to the user). At/near market open,
+  // before enough ticks exist yet, this returns null (same "not enough
+  // data yet" pattern used everywhere else in this app).
+  const ROLLING_WINDOW_TICKS = 4;
+  function computeRollingRangeBreakout(sym){
+    const todayStr = getIstDateStr(Date.now());
+    const ticks = (intradayHistory[sym] && intradayHistory[sym][todayStr]) || [];
+    if(ticks.length < ROLLING_WINDOW_TICKS + 1) return null; // need the window PLUS one more tick to test breakout against
+    const current = ticks[ticks.length - 1].price;
+    const windowTicks = ticks.slice(-(ROLLING_WINDOW_TICKS + 1), -1); // the window EXCLUDING the current/latest tick
+    let hi = -Infinity, lo = Infinity;
+    windowTicks.forEach(t => { if(t.price > hi) hi = t.price; if(t.price < lo) lo = t.price; });
+    let signal = "⚪ Neutral — Rolling Range-க்குள்ளேயே";
+    if(current > hi) signal = "🟢 Bullish Breakout (Buy Bias)";
+    else if(current < lo) signal = "🔴 Bearish Breakdown (Sell Bias)";
+    return { high: hi, low: lo, current, signal, windowMinutes: ROLLING_WINDOW_TICKS * 15 };
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Daily Strike Rate Backtests for all 5 new Indicators — explicit
+  // user instruction (Sep 2026, Tamil): "Correct Decision எடுக்க, Every
+  // 15-min Strike Rate + Every Day Average Strike Rate எல்லாத்துக்கும்
+  // வந்தே ஆகணும்". Each backtest walks day-by-day through CONFIRMED
+  // past days only (ownDailyHistory / intradayHistory — never today's
+  // still-forming data), computing what the indicator WOULD have
+  // signalled using only data available up to the PREVIOUS day, then
+  // checking whether the NEXT day's actual price action confirmed it.
+  // ⚠️ Honest limitation: VWAP's daily backtest uses a PRICE-AVERAGE
+  // PROXY (simple average of that day's recorded tick prices), NOT a
+  // true historical Volume-Weighted number — this app doesn't persist
+  // per-tick Volume for past days, only for today (via fetchQuote).
+  // ATR Stop-Loss has no 15-min-level %, only a Daily "did the stop
+  // survive" rate — it's a risk-reference level, not a directional
+  // Buy/Sell target, so a Profit/Loss % against it isn't meaningful.
+  // ══════════════════════════════════════════════════════════════════
+
+  function backtestSuperTrendDaily(days){
+    let success = 0, total = 0;
+    const perDay = [];
+    // 🐛 FIX (Sep 2026): the loop used to go all the way to days.length-1,
+    // which — while market is still open — tests TODAY's own still-
+    // forming bar as if it were a settled outcome, making this Daily
+    // Strike Rate shift as today's price moves. Same principle as the
+    // Pivot backtest's lastEntryIsLive fix — exclude today until
+    // n50TodayConfirmedFinal is true.
+    const upperBound = n50TodayConfirmedFinal ? days.length : days.length - 1;
+    for(let i=13;i<upperBound;i++){
+      const upToPrev = days.slice(0, i); // only data through day i-1
+      const st = computeSuperTrend(upToPrev, 10, 3);
+      if(!st) continue;
+      const prevClose = days[i-1].close, todayClose = days[i].close;
+      if(prevClose == null || todayClose == null) continue;
+      total++;
+      const ok = st.trendUp ? (todayClose > prevClose) : (todayClose < prevClose);
+      if(ok) success++;
+      perDay.push({ date: days[i].date, success: ok });
+    }
+    return { success, total, fail: total - success, perDay };
+  }
+
+  function backtestBollingerDaily(days){
+    let success = 0, total = 0;
+    const perDay = [];
+    const upperBound = n50TodayConfirmedFinal ? days.length : days.length - 1; // same fix as SuperTrend above
+    for(let i=20;i<upperBound;i++){
+      const upToPrev = days.slice(0, i);
+      const bb = computeBollingerBands(upToPrev, 20, 2);
+      if(!bb) continue;
+      const prevClose = days[i-1].close, todayClose = days[i].close;
+      if(prevClose == null || todayClose == null) continue;
+      let signal = null;
+      if(prevClose <= bb.lower) signal = "buy";
+      else if(prevClose >= bb.upper) signal = "sell";
+      if(!signal) continue; // no Band-touch signal that day — not counted (standard practice)
+      total++;
+      const ok = signal === "buy" ? (todayClose > prevClose) : (todayClose < prevClose);
+      if(ok) success++;
+      perDay.push({ date: days[i].date, success: ok });
+    }
+    return { success, total, fail: total - success, perDay };
+  }
+
+  function backtestATRStopLossDaily(days){
+    let success = 0, total = 0;
+    const perDay = [];
+    const upperBound = n50TodayConfirmedFinal ? days.length : days.length - 1; // same fix as SuperTrend/Bollinger above
+    for(let i=15;i<upperBound;i++){
+      const upToPrev = days.slice(0, i);
+      const prevClose = days[i-1].close;
+      const atrSL = computeATRStopLoss(upToPrev, prevClose, 14, 1.5);
+      const todayLow = days[i].low;
+      if(!atrSL || todayLow == null) continue;
+      total++;
+      const ok = todayLow > atrSL.stopLoss; // Success = the Stop-Loss level survived the next day (wasn't hit)
+      if(ok) success++;
+      perDay.push({ date: days[i].date, success: ok });
+    }
+    return { success, total, fail: total - success, perDay };
+  }
+
+  function backtestORBDaily(sym){
+    const hist = intradayHistory[sym];
+    if(!hist) return { success:0, total:0, fail:0, perDay:[] };
+    let success = 0, total = 0;
+    const perDay = [];
+    Object.keys(hist).sort().forEach(dateKey => {
+      const ticks = hist[dateKey];
+      const opening = ticks.filter(t => t.hhmm <= "0945");
+      if(!opening.length) return;
+      let hi = -Infinity, lo = Infinity;
+      opening.forEach(t => { if(t.price > hi) hi = t.price; if(t.price < lo) lo = t.price; });
+      const afterOpening = ticks.filter(t => t.hhmm > "0945");
+      if(!afterOpening.length) return;
+      let breakoutUp = false, breakoutDown = false;
+      afterOpening.forEach(t => { if(t.price > hi) breakoutUp = true; if(t.price < lo) breakoutDown = true; });
+      if(!breakoutUp && !breakoutDown) return; // no breakout that day — not counted
+      const dayClose = ticks[ticks.length - 1].price;
+      total++;
+      let ok = false;
+      if(breakoutUp && dayClose > hi) ok = true;
+      else if(breakoutDown && dayClose < lo) ok = true;
+      if(ok) success++;
+      perDay.push({ date: dateKey, success: ok });
+    });
+    return { success, total, fail: total - success, perDay };
+  }
+
+  // 🆕 Rolling Range Breakout — Daily Strike Rate Backtest. Unlike Fixed
+  // ORB (which checks against the DAY's close), this checks each
+  // intraday breakout against the VERY NEXT 15-min tick — matching this
+  // indicator's own "sliding every 15-min" character. Walks every past
+  // day's ticks; wherever the rolling window signalled a breakout,
+  // Success = the next tick continued in that same direction.
+  function backtestRollingRangeDaily(sym){
+    const hist = intradayHistory[sym];
+    if(!hist) return { success:0, total:0, fail:0, perDay:[] };
+    let success = 0, total = 0;
+    const perDay = [];
+    Object.keys(hist).sort().forEach(dateKey => {
+      const ticks = hist[dateKey];
+      for(let i=ROLLING_WINDOW_TICKS;i<ticks.length-1;i++){
+        const windowTicks = ticks.slice(i - ROLLING_WINDOW_TICKS, i);
+        let hi = -Infinity, lo = Infinity;
+        windowTicks.forEach(t => { if(t.price > hi) hi = t.price; if(t.price < lo) lo = t.price; });
+        const atTick = ticks[i].price;
+        let breakout = null;
+        if(atTick > hi) breakout = "UP";
+        else if(atTick < lo) breakout = "DOWN";
+        if(!breakout) continue;
+        const nextTick = ticks[i+1].price;
+        total++;
+        let ok = false;
+        if(breakout === "UP" && nextTick > atTick) ok = true;
+        else if(breakout === "DOWN" && nextTick < atTick) ok = true;
+        if(ok) success++;
+        perDay.push({ date: dateKey, success: ok });
+      }
+    });
+    return { success, total, fail: total - success, perDay };
+  }
+
+  function backtestVWAPDaily(sym){
+    const hist = intradayHistory[sym];
+    if(!hist) return { success:0, total:0, fail:0, perDay:[] };
+    let success = 0, total = 0;
+    const perDay = [];
+    Object.keys(hist).sort().forEach(dateKey => {
+      const ticks = hist[dateKey];
+      if(ticks.length < 4) return;
+      const avg = ticks.reduce((a,t) => a + t.price, 0) / ticks.length; // price-average PROXY for VWAP (no historical Volume stored)
+      const midTick = ticks[Math.floor(ticks.length/2)];
+      const closeTick = ticks[ticks.length - 1];
+      if(midTick.price === avg) return; // no clear signal at midday
+      total++;
+      const bullish = midTick.price > avg;
+      const ok = bullish ? (closeTick.price > midTick.price) : (closeTick.price < midTick.price);
+      if(ok) success++;
+      perDay.push({ date: dateKey, success: ok });
+    });
+    return { success, total, fail: total - success, perDay };
+  }
+
+  function renderOtherIndicators(days){
+    const el = $("n50OtherIndicators");
+    if(!el || !n50ActiveSym) return;
+    const last = days.length ? days[days.length - 1] : null;
+    const currentPrice = last ? last.close : null;
+
+    // 🆕 Date Range text — explicit user instruction (Sep 2026, Tamil):
+    // "ஒவ்வொரு நாளும் Strike Rate கொடுக்கும்போது, Date மேல இருக்கணும்" —
+    // shows exactly which dates each Daily Strike Rate backtest covered.
+    const dailyUpperBound = n50TodayConfirmedFinal ? days.length : days.length - 1; // matches the backtest functions' own boundary
+    const dailyRangeText = (days.length && dailyUpperBound > 0)
+      ? `${days[0].date} – ${days[Math.min(dailyUpperBound, days.length) - 1].date}`
+      : null;
+    const intraKeysForRange = (intradayHistory[n50ActiveSym] ? Object.keys(intradayHistory[n50ActiveSym]).sort() : []);
+    const intraRangeText = intraKeysForRange.length ? `${intraKeysForRange[0]} – ${intraKeysForRange[intraKeysForRange.length - 1]}` : null;
+
+    // Shared helper — turns a {success,total,fail} result into a small
+    // Green/Red "Daily Strike Rate" badge line, same visual language as
+    // the Pivot Suggestion's Strike Rate elsewhere in this app.
+    function strikeBadge(r, dateRangeText, minTotal){
+      if(!r || r.total < (minTotal || 3)) return `<div style="font-size:10.5px; color:var(--muted); margin-top:4px;">📅 Daily Strike Rate: போதுமான Backtest Data இல்ல.</div>`;
+      const pct = (r.success / r.total * 100);
+      const cls = pct >= 50 ? "up" : "down";
+      const dateLine = dateRangeText ? `<div style="font-size:10px; color:var(--muted); margin-top:6px;">📅 ${dateRangeText}</div>` : "";
+      return dateLine + `<div style="font-size:10.5px; margin-top:2px;">Daily Strike Rate: <span class="${cls}" style="font-weight:700;">${pct.toFixed(0)}% (${r.success}/${r.total})</span></div>`;
+    }
+
+    const st = computeSuperTrend(days, 10, 3);
+    const stHtml = (st
+      ? `<div class="prow"><span class="pl">${st.trendUp ? "🟢 Uptrend (Buy Bias)" : "🔴 Downtrend (Sell Bias)"}</span><span class="pv nums ${st.trendUp ? "up" : "down"}">₹${fmt(st.value)}</span></div>`
+      : `<div class="stock-empty">SuperTrend கணக்கிட போதுமான Data இல்ல (குறைந்தது ~12 நாட்கள் தேவை).</div>`)
+      + strikeBadge(backtestSuperTrendDaily(days), dailyRangeText);
+
+    const bb = computeBollingerBands(days, 20, 2);
+    let bbHtml = `<div class="stock-empty">Bollinger Bands கணக்கிட போதுமான Data இல்ல (20 நாட்கள் தேவை).</div>`;
+    if(bb && currentPrice != null){
+      let bbSignal = "⚪ Neutral — Bands-க்குள்ளேயே", bbCls = "";
+      if(currentPrice <= bb.lower){ bbSignal = "🟢 Oversold — Buy Bias"; bbCls = "up"; }
+      else if(currentPrice >= bb.upper){ bbSignal = "🔴 Overbought — Sell Bias"; bbCls = "down"; }
+      bbHtml = `<div class="prow"><span class="pl">${bbSignal}</span><span class="pv nums ${bbCls}"></span></div>
+        <div class="prow"><span class="pl">Upper Band</span><span class="pv nums down">₹${fmt(bb.upper)}</span></div>
+        <div class="prow"><span class="pl">Middle (SMA-20)</span><span class="pv nums">₹${fmt(bb.middle)}</span></div>
+        <div class="prow"><span class="pl">Lower Band</span><span class="pv nums up">₹${fmt(bb.lower)}</span></div>` + strikeBadge(backtestBollingerDaily(days), dailyRangeText);
+    }
+
+    const atrSL = computeATRStopLoss(days, currentPrice, 14, 1.5);
+    const atrHtml = (atrSL
+      ? `<div class="prow"><span class="pl">🛑 Stop-Loss Reference</span><span class="pv nums">₹${fmt(atrSL.stopLoss)}</span></div>
+         <div class="prow"><span class="pl">ATR (14-day) Value</span><span class="pv nums">₹${fmt(atrSL.atr)}</span></div>`
+      : `<div class="stock-empty">ATR கணக்கிட போதுமான Data இல்ல (14 நாட்கள் தேவை).</div>`)
+      + strikeBadge(backtestATRStopLossDaily(days), dailyRangeText)
+      + `<div style="font-size:10px; color:var(--muted); margin-top:2px;">(இது Stop-Loss Reference — Daily "Success" = அடுத்த நாள் Level Hit ஆகாம Survive ஆனது. 15-min-க்கு ஒரு Directional % இல்ல, ஆனா "Survival Rate" Tick Log Screen-ல் Average-ஆ இருக்கு.)</div>`;
+
+    const orb = computeORB(n50ActiveSym);
+    const orbHtml = (orb
+      ? `<div class="prow"><span class="pl">${orb.signal}</span><span class="pv nums"></span></div>
+         <div class="prow"><span class="pl">Opening Range High (9:15-9:45)</span><span class="pv nums down">₹${fmt(orb.high)}</span></div>
+         <div class="prow"><span class="pl">Opening Range Low</span><span class="pv nums up">₹${fmt(orb.low)}</span></div>`
+      : `<div class="stock-empty">இன்னும் இன்றைக்கு Opening Range (9:15-9:45) Data Record ஆகல.</div>`)
+      + strikeBadge(backtestORBDaily(n50ActiveSym), intraRangeText);
+
+    // 🆕 Rolling Range Breakout — complements the Fixed Opening Range
+    // above; this one keeps sliding every 15-min tick (last ~60 min).
+    const rollingOrb = computeRollingRangeBreakout(n50ActiveSym);
+    const rollingOrbHtml = (rollingOrb
+      ? `<div class="prow"><span class="pl">${rollingOrb.signal}</span><span class="pv nums"></span></div>
+         <div class="prow"><span class="pl">Rolling High (Last ${rollingOrb.windowMinutes} min)</span><span class="pv nums down">₹${fmt(rollingOrb.high)}</span></div>
+         <div class="prow"><span class="pl">Rolling Low</span><span class="pv nums up">₹${fmt(rollingOrb.low)}</span></div>`
+      : `<div class="stock-empty">இன்னும் Rolling Window-க்கு போதுமான Ticks இல்ல (குறைந்தது ${ROLLING_WINDOW_TICKS + 1} Ticks தேவை — சுமார் ${(ROLLING_WINDOW_TICKS+1)*15} நிமிடம்).</div>`)
+      + strikeBadge(backtestRollingRangeDaily(n50ActiveSym), intraRangeText);
+
+    // 🆕 VWAP (Volume Weighted Average Price) — 5th indicator, explicit
+    // user instruction. Price above today's VWAP = Bullish (institutions/
+    // bulk buyers have been paying above this average); below = Bearish.
+    const cached5 = n50Hist[n50ActiveSym];
+    const vwapVal = cached5 ? cached5.vwap : null;
+    let vwapHtml = `<div class="stock-empty">இன்னும் இன்றைக்கு VWAP Data கிடைக்கல் (Market Open ஆகி, Volume Data வர வேண்டும்).</div>`;
+    if(vwapVal != null && currentPrice != null){
+      const vwapSignal = currentPrice >= vwapVal ? "🟢 Price VWAP-க்கு மேல — Bullish (Buy Bias)" : "🔴 Price VWAP-க்கு கீழ — Bearish (Sell Bias)";
+      vwapHtml = `<div class="prow"><span class="pl">${vwapSignal}</span><span class="pv nums"></span></div>
+        <div class="prow"><span class="pl">VWAP (Today)</span><span class="pv nums">₹${fmt(vwapVal)}</span></div>
+        <div class="prow"><span class="pl">Current Rate</span><span class="pv nums">₹${fmt(currentPrice)}</span></div>`
+        + strikeBadge(backtestVWAPDaily(n50ActiveSym), intraRangeText)
+        + `<div style="font-size:10px; color:var(--muted); margin-top:2px;">(⚠️ இந்த Daily Strike Rate, கடந்த நாட்களின் Price-Average Proxy வெச்சு — Real Historical Volume Store ஆகாததால், True VWAP இல்ல, Approximation.)</div>`;
+    }
+
+    el.innerHTML =
+      `<div class="n50-group"><div class="glabel">📈 SuperTrend (ATR Period 10, Multiplier 3)</div>` +
+        `<div style="font-size:10.5px; color:var(--muted); margin-bottom:8px;">அடிப்படை: கடந்த 10 Trading Days-ஓட Daily High/Low/Close</div>${stHtml}</div>` +
+      `<div class="n50-group"><div class="glabel">📊 Bollinger Bands (SMA-20, ±2 Std Dev)</div>` +
+        `<div style="font-size:10.5px; color:var(--muted); margin-bottom:8px;">அடிப்படை: கடந்த 20 Trading Days-ஓட Daily Close</div>${bbHtml}</div>` +
+      `<div class="n50-group"><div class="glabel">🛑 ATR Stop-Loss (14-day, 1.5×)</div>` +
+        `<div style="font-size:10.5px; color:var(--muted); margin-bottom:8px;">அடிப்படை: கடந்த 14 Trading Days-ஓட Daily High/Low/Close</div>${atrHtml}</div>` +
+      `<div class="n50-group"><div class="glabel">🔔 Opening Range Breakout (First 30 min)</div>` +
+        `<div style="font-size:10.5px; color:var(--muted); margin-bottom:8px;">அடிப்படை: இன்றைக்கு காலை 9:15 AM முதல் 9:45 AM வரைக்கும் (முதல் 30 நிமிடம்)</div>${orbHtml}</div>` +
+      `<div class="n50-group"><div class="glabel">🔁 Rolling Range Breakout (Sliding)</div>` +
+        `<div style="font-size:10.5px; color:var(--muted); margin-bottom:8px;">அடிப்படை: ஒவ்வொரு 15-min Tick-லும் மாறுற, கடந்த ~60 நிமிடம் (4 Ticks) Range</div>${rollingOrbHtml}</div>` +
+      `<div class="n50-group"><div class="glabel">💹 VWAP (Volume Weighted Average Price)</div>` +
+        `<div style="font-size:10.5px; color:var(--muted); margin-bottom:8px;">அடிப்படை: இன்றைக்கு Market Open (9:15 AM) முதல் இப்போவரைக்கும் (Live)</div>${vwapHtml}</div>`;
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -1565,8 +3271,7 @@
     if(!n50ActiveSym) return null;
     const cached = n50Hist[n50ActiveSym];
     if(!cached || !cached.days || !cached.days.length) return null;
-    const last = cached.days[cached.days.length - 1];
-    const levels = computePivotLevels(last);
+    const levels = computeTimeAlignedWeeklyPivotLevels(n50ActiveSym, getHHMM(Date.now())) || computeLiveWeeklyPivotLevels(n50ActiveSym); // same basis as the on-screen Investment Plan
     if(!levels) return null;
     const stockRow = stockList.find(([s]) => s === n50ActiveSym);
     const name = stockRow ? stockRow[1] : n50ActiveSym;
@@ -1602,7 +3307,7 @@
     return `📅 ${dateStr}\n` +
       `📊 *${ctx.sym}* (${ctx.name})\n` +
       `🕐 ${INVEST_PLAN_SLOT.label}\n` +
-      `அடிப்படை: ${ctx.levels.basedOnDate}-ன் High/Low/Close (Pivot Point Method)\n\n` +
+      `அடிப்படை: ${ctx.levels.basedOnDate} (Last 7 Working Days)-ன் High/Low/Close (Weekly Pivot Point Method)\n\n` +
       `🟢 Buy-Zone Reference: ${fmt(ctx.levels.S1)}\n` +
       `　　_இந்த ரேட்ல/அதற்கு கீழ வந்தா, Buy பண்ண Reference-ஆ பாக்கலாம்_\n` +
       `🔴 Sell/Book-Profit Reference: ${fmt(ctx.levels.R1)}\n` +
@@ -1772,7 +3477,7 @@
     c.fillStyle = "#D4A72C"; c.font = "700 32px sans-serif";
     c.fillText("🕐 " + INVEST_PLAN_SLOT.label, 70, 410);
     c.fillStyle = "#8A8F98"; c.font = "400 24px sans-serif";
-    c.fillText(`அடிப்படை: ${ctx0.levels.basedOnDate}-ன் High/Low/Close (Pivot Point Method)`, 70, 446);
+    c.fillText(`அடிப்படை: ${ctx0.levels.basedOnDate} (Last 7 Working Days) — Weekly Pivot Point Method`, 70, 446);
     // Level rows — each with a short caption explaining what it means.
     const rows = [
       { label: "🟢 Buy-Zone Reference", value: fmt(ctx0.levels.S1), color: "#2FBF71", caption: "இந்த ரேட்ல/அதற்கு கீழ வந்தா, Buy பண்ண Reference" },
@@ -1853,9 +3558,26 @@
   // Shared fetch+cache step (no form-view DOM touched) — used by both the
   // single-stock form (fetchAndRenderN50) and the bulk auto-fetch-all below.
   async function fetchAndCacheN50(sym){
-    const res = await fetchDailyHistory(encodeURIComponent(sym) + ".NS");
+    // 🆕 range="3mo" (~60+ trading days) — explicit user instruction (Sep
+    // 2026, Tamil): "60 நாளைக்கு Data எடுக்கலாம்". Was "1mo" (~22 days)
+    // before, which was TIGHT for Bollinger Bands (needs 20 days) with
+    // no buffer for holidays/gaps. This is a pure widening — every
+    // existing feature using n50Hist[sym].days (7-day/3-day charts,
+    // Success Rate Snapshot windows, Investment Plan's live-today-bar
+    // source) still works unchanged, since they all just take the last
+    // few entries (.slice(-N)) regardless of how far back the array goes.
+    // 🆕 VWAP — explicit user instruction (Sep 2026, Tamil): the 5th
+    // indicator (VWAP), needing Volume data. Reuses fetchQuote() (the
+    // SAME function already computing VWAP for the NIFTY/SENSEX index
+    // cards) run in parallel here — this makes VWAP refresh on every
+    // 15-min N50 tick on its own, instead of silently depending on
+    // whether the main dashboard happens to be open/fetching too.
+    const [res, quoteData] = await Promise.all([
+      fetchDailyHistory(encodeURIComponent(sym) + ".NS", "3mo"),
+      fetchQuote(encodeURIComponent(sym) + ".NS")
+    ]);
     if(res.ok){
-      n50Hist[sym] = { days: res.days, time: new Date().toLocaleString("en-IN", { hour:"2-digit", minute:"2-digit", day:"2-digit", month:"short" }), dateKey: todayKey() };
+      n50Hist[sym] = { days: res.days, time: new Date().toLocaleString("en-IN", { hour:"2-digit", minute:"2-digit", day:"2-digit", month:"short" }), dateKey: todayKey(), vwap: (quoteData && quoteData.ok && quoteData.vwap != null) ? quoteData.vwap : null };
       saveN50Hist(n50Hist);
     }
     return res.ok;
@@ -1898,13 +3620,80 @@
   // usage than before, since it no longer waits for you to open anything.
   const N50_AUTO_REFRESH_MS = 15 * 60 * 1000;
   let n50AutoRefreshRunning = false;
+
+  // ── Market-hours gate — explicit user instruction (Sep 2026, Tamil):
+  // "Market Open Time-ல் தான், Holiday/Saturday/Sunday விட்டு இந்த
+  // Auto-Refresh Implement பண்ணுங்க". Fetching (and backtesting Strike
+  // Rate on) data while NSE is closed was producing meaningless/stale
+  // numbers — this restricts the 15-min N50 auto-refresh to real NSE
+  // cash-market trading windows only.
+  // NSE cash-market hours: 09:15–15:30 IST, Mon–Fri, minus official
+  // NSE/BSE trading holidays. Source: NSE & BSE 2026 holiday calendar
+  // (zerodha.com/marketintel/holiday-calendar, checked Sep 2026) — any
+  // date the exchange adds/changes after that won't auto-reflect here;
+  // update this list if NSE notifies a new holiday mid-year.
+  const NSE_HOLIDAYS_2026 = [
+    "2026-01-15", // Municipal Corporation Elections (Maharashtra)
+    "2026-01-26", // Republic Day
+    "2026-03-03", // Holi
+    "2026-03-26", // Shri Ram Navami
+    "2026-03-31", // Shri Mahavir Jayanti
+    "2026-04-03", // Good Friday
+    "2026-04-14", // Dr. Baba Saheb Ambedkar Jayanti
+    "2026-05-01", // Maharashtra Day
+    "2026-05-28", // Bakri Eid
+    "2026-06-26", // Moharram
+    "2026-09-14", // Ganesh Chaturthi
+    "2026-10-02", // Mahatma Gandhi Jayanti
+    "2026-10-20", // Dussehra
+    "2026-11-10", // Diwali-Balipratipada
+    "2026-11-24", // Guru Nanak Jayanti
+    "2026-12-25"  // Christmas
+  ];
+  function isNseMarketOpenNow(){
+    const now = Date.now();
+    // Prefer NSE's own REAL live open/close for today (handles a
+    // notified extended/early-close session automatically) — only fall
+    // back to the static 09:15–15:30 + holiday-list schedule before the
+    // first live NIFTY fetch of the day has told us the real window.
+    if(liveRegularOpenMs != null && liveRegularCloseMs != null){
+      if(now < liveRegularOpenMs || now > liveRegularCloseMs) return false;
+    } else {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata", weekday: "short",
+        year: "numeric", month: "2-digit", day: "2-digit",
+        hour: "2-digit", minute: "2-digit", hour12: false
+      }).formatToParts(new Date(now));
+      const get = t => parts.find(p => p.type === t).value;
+      const weekday = get("weekday"); // "Mon".."Sun" in IST
+      if(weekday === "Sat" || weekday === "Sun") return false; // Saturday/Sunday
+      const dateStr = `${get("year")}-${get("month")}-${get("day")}`;
+      if(NSE_HOLIDAYS_2026.includes(dateStr)) return false; // NSE/BSE holiday
+      const mins = parseInt(get("hour"), 10) * 60 + parseInt(get("minute"), 10);
+      const scheduledOpen = mins >= (9 * 60 + 15) && mins <= (15 * 60 + 30); // 09:15–15:30 IST fallback
+      if(!scheduledOpen) return false;
+    }
+    // Live safety-net: our fixed holiday list (and even the live open/
+    // close window above) can't predict a surprise/short-notice NSE
+    // closure. If Yahoo's own live feed (read the last time NIFTY was
+    // fetched) says the exchange is actually CLOSED right now, trust
+    // that over everything else.
+    if(lastKnownMarketState === "CLOSED") return false;
+    return true;
+  }
+
   async function autoRefreshAllN50(){
     if(n50AutoRefreshRunning) return;
+    if(!isNseMarketOpenNow()) return; // Market Closed/Holiday/Weekend — skip silently, no stale fetch
     n50AutoRefreshRunning = true;
     try{
       await fetchInChunks(stockList, async ([sym]) => {
         await fetchAndCacheN50(sym);
       }, 6);
+      n50LastTickAt = Date.now(); // this full 15-min tick genuinely completed while market was open
+      updateTodayConfirmedFinalFlag();
+      recordTodayIntoOwnHistoryIfConfirmed(); // append today's settled bar to our own day-by-day log, once confirmed final
+      recordIntradayTick(); // log this tick's time+rate for every stock, for the "Today All 15-min" view
       // Repaint whichever screen is currently visible with the fresh data.
       if(n50ActiveSym && $("n50FormView").style.display !== "none" && n50Hist[n50ActiveSym]){
         renderN50FormData(n50Hist[n50ActiveSym].days);
@@ -1913,13 +3702,14 @@
       if($("n50ListView").style.display !== "none"){
         renderN50List($("n50Search").value);
         renderTopPerformers();
+      renderUnifiedLeaderboard();
       }
     } finally {
       n50AutoRefreshRunning = false;
     }
   }
-  autoRefreshAllN50(); // once immediately on load — all 50, no tap needed
-  setInterval(autoRefreshAllN50, N50_AUTO_REFRESH_MS);
+  autoRefreshAllN50(); // runs immediately IF market is open right now (see isNseMarketOpenNow above); no-op otherwise
+  setInterval(autoRefreshAllN50, N50_AUTO_REFRESH_MS); // re-checks market-hours gate every tick, so it starts/stops itself around 9:15 AM / 3:30 PM automatically
 
   // ── Auto-fetch ALL 50 stocks' history the moment the Nifty 50 Entry list
   // is opened — no more tapping into each stock one by one. Skips symbols
@@ -1937,6 +3727,7 @@
     if(!pending.length){
       $("n50ListStatus").textContent = "";
       n50BulkRunning = false;
+      backfillOwnDailyHistoryOnce(); // still ensure this ran, even if nothing needed fetching this time
       return;
     }
     let done = 0;
@@ -1948,10 +3739,14 @@
       $("n50ListStatus").innerHTML = `<span class="loading-dot"></span>${total} Stocks Auto Fetch ஆகுது… (${done}/${total})`;
       renderN50List($("n50Search").value); // progressively flip tags to ✓ Fetched
       renderTopPerformers();
+      renderUnifiedLeaderboard();
     }, 6);
     $("n50ListStatus").textContent = "";
     n50BulkRunning = false;
+    backfillOwnDailyHistoryOnce(); // one-time — makes Strike Rate/Top Performers ready immediately instead of waiting real days
+    renderN50List($("n50Search").value);
     renderTopPerformers();
+      renderUnifiedLeaderboard();
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -1971,9 +3766,14 @@
   function computeAllStockBacktests(){
     const out = [];
     stockList.forEach(([sym, name]) => {
-      const cached = n50Hist[sym];
-      if(!cached || !cached.days || cached.days.length < 4) return; // need >=4 days for >=3 backtestable pairs
-      const r = backtestPivotSuccess(cached.days);
+      // 🆕 Uses ownDailyHistory (this app's own day-by-day collected
+      // data — see recordTodayIntoOwnHistoryIfConfirmed above), NOT
+      // n50Hist's Yahoo backfill, per explicit user instruction. Every
+      // entry here was appended only after being confirmed final, so
+      // pass lastEntryIsLive=false to backtestPivotSuccess.
+      const days = ownDailyHistory[sym];
+      if(!days || days.length < 4) return; // need >=4 confirmed days for >=3 backtestable pairs
+      const r = backtestPivotSuccess(days, false);
       if(r.total < 3) return;
       out.push({ sym, name, success: r.success, total: r.total, fail: r.fail, pct: r.success / r.total * 100 });
     });
@@ -2011,7 +3811,7 @@
     const el = $("topPerformersBody");
     if(!el) return;
     const all = computeAllStockBacktests();
-    if(!all.length){ el.innerHTML = `<div class="stock-empty">போதுமான Backtest Data இல்ல — Nifty 50 Entry-ஐ திறந்து கொஞ்ச நேரம் Wait பண்ணுங்க (Auto Fetch ஆகும்).</div>`; return; }
+    if(!all.length){ el.innerHTML = `<div class="stock-empty">App Collect பண்ற Own Data இன்னும் போதாது — ஒவ்வொரு Trading Day Market Close ஆனதுக்கு அப்புறமும் இது தானா 1 நாள் Data சேர்த்துக்கும், கொஞ்ச நாளில் Ranking வரும்.</div>`; return; }
     const top10 = all.slice(0, 10), top5 = all.slice(0, 5), top3 = all.slice(0, 3), top1 = all.slice(0, 1);
     el.innerHTML =
       renderTopTier("10", "✨ Top 10", `<span class="top-badge">✨</span>`, top10, groupStrikeRate(top10)) +
@@ -2032,6 +3832,519 @@
     });
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 One Point of Contact — All 50 Stocks, 15-min Suggestion Strike
+  // Rate — explicit user instruction (Sep 2026, Tamil): "எப்போ Open
+  // பண்ணாலும் இதுவரைக்கும் எத்தனை 15-min Suggestion கொடுத்துச்சோ,
+  // அத்தனைக்கும் Strike Rate Profitable-ஆ இருந்தா Green %, Loss-ஆ
+  // இருந்தா Red % காட்டணும் — ஒரு Common Button, Tap பண்ணின உடனே 50
+  // Stocks-க்கும் Display ஆகணும், Top 3 Gainers + Top 3 Losers வேற வேற
+  // Colors-ல Flash ஆகணும்". On-demand (Button Tap) — not auto-computed
+  // on every list render, since summing every stored tick for 50 stocks
+  // is heavier than the other panels here.
+  // ══════════════════════════════════════════════════════════════════
+  function computeAllStocksTickStrikeRate(){
+    const results = [];
+    stockList.forEach(([sym, name]) => {
+      const hist = intradayHistory[sym];
+      if(!hist) return;
+      const perInd = {};
+      LEADERBOARD_INDICATORS.forEach(ind => { perInd[ind.key] = { success:0, total:0 }; });
+      Object.keys(hist).forEach(dateKey => {
+        (hist[dateKey] || []).forEach(t => {
+          LEADERBOARD_INDICATORS.forEach(ind => {
+            const ok = tickIsSuccess(ind, t);
+            if(ok == null) return;
+            perInd[ind.key].total++; if(ok) perInd[ind.key].success++;
+          });
+        });
+      });
+      if(!perInd.avgAll.total) return; // no recorded 15-min Suggestion ticks yet for this stock
+      const indicators = {};
+      LEADERBOARD_INDICATORS.forEach(ind => {
+        const b = perInd[ind.key];
+        indicators[ind.key] = b.total ? { success:b.success, total:b.total, pct:b.success/b.total*100 } : null;
+      });
+      results.push({ sym, name, indicators, pct: indicators.avgAll.pct }); // ranked by ⭐Avg (combined among all 8)
+    });
+    results.sort((a,b) => b.pct - a.pct);
+    return results;
+  }
+  function renderAllStocksStrikeRate(){
+    const el = $("allStocksStrikeRateBody");
+    if(!el) return;
+    const rows = computeAllStocksTickStrikeRate();
+    if(!rows.length){
+      el.innerHTML = `<div class="stock-empty">இன்னும் Data இல்ல — 15-min Auto-Refresh சில Ticks Record ஆனதும் இங்க வரும்.</div>`;
+      return;
+    }
+    const n = rows.length;
+    // 🆕 Redesigned for readability (Sep 2026, per repeated user feedback:
+    // "மீன் மார்க்கெட் மாதிரி கசகசன்னு இருக்கக்கூடாது") — roomier
+    // padding, a clearer border weight, and a dedicated Action column
+    // (Buy/Sell) instead of cramming it into the Stock name cell.
+    // 🆕 Explicit user instruction (Sep 2026, Tamil): "இதுவரைக்கும்
+    // நடந்து முடிஞ்ச 15-min Strike Rate Average, Stock Name-க்கு Left
+    // Side-ல் (Very First Column) வரணும் — இதுல் இருந்து தான் Top 3
+    // Gainer/Loser" — the Avg-All indicator is pulled OUT of the
+    // per-indicator loop and shown as its own leading column, instead of
+    // being buried as the 8th column among the rest.
+    const otherIndicators = LEADERBOARD_INDICATORS.filter(ind => ind.key !== "avgAll");
+    const CELL = "border:1px solid var(--line); padding:8px 5px; text-align:center;";
+    function cellFor(bucket){
+      if(!bucket || !bucket.total) return `<td style="${CELL} color:var(--muted);">—</td>`;
+      const cls = bucket.pct >= 50 ? "up" : "down";
+      return `<td class="${cls}" style="${CELL} font-weight:700;">${bucket.pct.toFixed(0)}%</td>`;
+    }
+    const STICKY = "position:sticky; top:0; z-index:2;";
+    const colgroup = `<colgroup><col style="width:11%;"><col style="width:15%;">${otherIndicators.map(()=>'<col style="width:9%;">').join("")}<col style="width:12%;"></colgroup>`;
+    const headerHtml = `<tr style="background:var(--card2); color:var(--gold); font-size:10px;">
+        <th style="${CELL} background:var(--card2); ${STICKY}">⭐Avg</th>
+        <th style="${CELL} text-align:left; background:var(--card2); ${STICKY}">Stock</th>` +
+      otherIndicators.map(ind => `<th style="${CELL} background:var(--card2); ${STICKY}">${ind.label}</th>`).join("") +
+      `<th style="${CELL} background:var(--card2); ${STICKY}">Call</th></tr>`;
+    const bodyRows = rows.map((r, i) => {
+      let pill = "", rankCls = "";
+      if(i === 0){ rankCls = "rank-badge-1"; pill = "🥇 "; }
+      else if(i === 1){ rankCls = "rank-badge-2"; pill = "🥈 "; }
+      else if(i === 2){ rankCls = "rank-badge-3"; pill = "🥉 "; }
+      else if(i === n-1){ rankCls = "rank-badge-worst1"; pill = "⚠️ "; }
+      else if(i === n-2){ rankCls = "rank-badge-worst2"; pill = "⚠️ "; }
+      else if(i === n-3){ rankCls = "rank-badge-worst3"; pill = "⚠️ "; }
+      const zebra = (!rankCls && i % 2 === 1) ? "background:var(--card2);" : "";
+      const nameCellStyle = rankCls ? `${CELL} text-align:left; white-space:nowrap; font-weight:800;` : `${CELL} text-align:left; white-space:nowrap; font-weight:600;`;
+      const avgCellStyle = rankCls ? `${CELL} font-weight:800;` : `${CELL} font-weight:700;`;
+      const nameCellCls = rankCls || "";
+      const avgBucket = r.indicators.avgAll;
+      const avgCls = rankCls || (avgBucket && avgBucket.pct >= 50 ? "up" : "down");
+      const avgCell = `<td class="${avgCls}" style="${avgCellStyle}">${pill}${avgBucket ? avgBucket.pct.toFixed(0)+"%" : "—"}</td>`;
+      const actionCell = `<td style="${CELL} white-space:nowrap; padding:6px 3px;">
+          <span class="btn" data-buy-sym="${r.sym}" style="display:inline-block; padding:4px 7px; font-size:11px; margin:0 2px; background:rgba(47,191,113,0.15); border-color:var(--up); color:var(--up);">🟢Buy</span>
+          <span class="btn" data-sell-sym="${r.sym}" style="display:inline-block; padding:4px 7px; font-size:11px; margin:0 2px; background:rgba(226,84,74,0.15); border-color:var(--down); color:var(--down);">🔴Sell</span>
+        </td>`;
+      return `<tr style="${zebra}">
+        ${avgCell}
+        <td class="${nameCellCls}" data-sym="${r.sym}" style="${nameCellStyle} cursor:pointer;">${r.sym}</td>` +
+        otherIndicators.map(ind => cellFor(r.indicators[ind.key])).join("") + actionCell + `</tr>`;
+    }).join("");
+    el.innerHTML = `<div style="overflow:auto; max-height:60vh; border:1px solid var(--line); border-radius:8px;"><table class="strike-table" style="border-collapse:collapse; font-size:11px; width:100%;">
+      ${colgroup}
+      <thead>${headerHtml}</thead>
+      <tbody>${bodyRows}</tbody>
+    </table></div>`;
+    el.querySelectorAll("[data-sym]").forEach(cell => {
+      cell.addEventListener("click", () => openN50Form(cell.getAttribute("data-sym")));
+    });
+    // 🆕 Buy/Sell Call buttons — explicit user instruction (Sep 2026,
+    // Tamil): "இந்த சார்ட்ல இருந்தே Buy/Sell Call எடுப்பேன், Next 15-min
+    // Slot-ஐ Choose பண்ணுவேன்". Navigates to that stock's page and
+    // pre-selects Buy/Sell in the SAME already-safety-checked Quick
+    // Order panel (Fund Match + Confirm Dialog) — reused, not duplicated
+    // 50 times inline here.
+    el.querySelectorAll("[data-buy-sym]").forEach(btn => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        qoPendingTxnType = "B";
+        openN50Form(btn.getAttribute("data-buy-sym"));
+      });
+    });
+    el.querySelectorAll("[data-sell-sym]").forEach(btn => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        qoPendingTxnType = "S";
+        openN50Form(btn.getAttribute("data-sell-sym"));
+      });
+    });
+  }
+  const allStocksCalcBtnEl = $("allStocksCalcBtn");
+  if(allStocksCalcBtnEl) allStocksCalcBtnEl.addEventListener("click", renderAllStocksStrikeRate);
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 50-Company Line Graph — explicit user instruction (Sep 2026,
+  // Tamil): "15-min Strike Rate Profit/Loss அடிப்படையில், ஒவ்வொரு
+  // Company-க்கும் Line Graph, Bold Colorful Name-உடன், Scroll பண்ணி 1
+  // முதல் 50 வரைக்கும் பாக்கும்படி". Plots each stock's Pivot 15-min
+  // tick `pct` (Profit/Loss %) values, in chronological order, as a
+  // small SVG line chart — same drawing style as renderPriceChartSVG
+  // elsewhere in this app, adapted for a %-based (can go negative) series.
+  // ══════════════════════════════════════════════════════════════════
+  const GRAPH_NAME_COLORS = ["#d4af37","#4a90d9","#2fbf71","#e2544a","#ab47bc","#ff8c42","#26c6da","#f06292","#9ccc65","#ffca28"];
+  function buildStockPctSeries(sym, numDays){
+    numDays = numDays || 1;
+    const hist = intradayHistory[sym];
+    if(!hist) return [];
+    // 🆕 Explicit user instruction (Sep 2026, Tamil): "1-Day, So-Far
+    // 3-Days, So-Far 7-Days — 3 Separate Icons". numDays=1 → today only
+    // (matches the earlier fix). numDays=3/7 → the last N STORED dates
+    // (sorted ascending, so this naturally includes today's partial
+    // ticks as the final segment — "So Far" needs no special handling
+    // since future ticks don't exist to include anyway).
+    const todayStr = getIstDateStr(Date.now());
+    if(numDays === 1){
+      const todayTicks = hist[todayStr] || [];
+      return todayTicks.filter(t => t.pct != null).map(t => t.pct);
+    }
+    const dateKeys = Object.keys(hist).sort().slice(-numDays);
+    const series = [];
+    dateKeys.forEach(dateKey => {
+      (hist[dateKey] || []).forEach(t => { if(t.pct != null) series.push(t.pct); });
+    });
+    return series;
+  }
+  function renderPctLineSVG(series){
+    // 🆕 Explicit user instruction (Sep 2026, Tamil): "ஒவ்வொரு 15-min
+    // Change-க்கும் Exact % Label வரணும் (+/-), Line Positive-ல் Green,
+    // Negative-ல் Red-ஆ மாறணும்". Width scales with point count so
+    // labels get breathing room (wraps in a horizontal-scroll div);
+    // height increased to leave room for labels above/below each point.
+    const W = Math.max(320, series.length * 18), H = 130, padL = 34, padR = 10, padT = 22, padB = 22;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    let minV = Math.min(0, ...series), maxV = Math.max(0, ...series);
+    if(minV === maxV){ minV -= 1; maxV += 1; }
+    const pad = (maxV - minV) * 0.15;
+    minV -= pad; maxV += pad;
+    const xFor = i => padL + (series.length === 1 ? plotW/2 : (i/(series.length-1)) * plotW);
+    const yFor = v => padT + (1 - (v - minV)/(maxV - minV)) * plotH;
+    const zeroY = yFor(0);
+    let svg = `<line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W-padR}" y2="${zeroY.toFixed(1)}" stroke="#3a3f38" stroke-width="1" stroke-dasharray="3,2"/>`;
+    svg += `<text x="2" y="${(zeroY+3).toFixed(1)}" font-size="8" fill="#8A8F98">0%</text>`;
+    // Segments — each i→i+1 segment colored by the SIGN of the point it
+    // arrives at (point i+1): Green if that value ≥0 (Profit), Red if <0 (Loss).
+    for(let i=0;i<series.length-1;i++){
+      const v2 = series[i+1];
+      const segColor = v2 >= 0 ? "#2FBF71" : "#E5484D";
+      svg += `<line x1="${xFor(i).toFixed(1)}" y1="${yFor(series[i]).toFixed(1)}" x2="${xFor(i+1).toFixed(1)}" y2="${yFor(v2).toFixed(1)}" stroke="${segColor}" stroke-width="1.8"/>`;
+    }
+    // Point dots + % labels — every single 15-min value labelled, per
+    // explicit instruction. Label sits ABOVE the dot for Profit (+),
+    // BELOW for Loss (−), so the label doesn't sit on top of the 0% line.
+    series.forEach((v,i) => {
+      const x = xFor(i), y = yFor(v);
+      const cls = v >= 0 ? "#2FBF71" : "#E5484D";
+      const labelText = `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+      const labelY = v >= 0 ? y - 6 : y + 12;
+      svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.3" fill="${cls}"/>`;
+      svg += `<text x="${x.toFixed(1)}" y="${labelY.toFixed(1)}" font-size="6.5" fill="${cls}" text-anchor="middle">${labelText}</text>`;
+    });
+    return `<div style="overflow-x:auto;"><svg viewBox="0 0 ${W} ${H}" style="width:${W}px; max-width:none; height:130px; display:block;">${svg}</svg></div>`;
+  }
+  let qoCurrentGraphScope = null; // 1 | 3 | 7 | null — which scope is currently shown, for toggle-closed behavior
+  function renderAllStocksGraphs(numDays, label){
+    const el = $("allStocksGraphBody");
+    if(!el) return;
+    if(qoCurrentGraphScope === numDays){
+      // tapping the SAME scope's button again closes it
+      el.innerHTML = "";
+      qoCurrentGraphScope = null;
+      return;
+    }
+    qoCurrentGraphScope = numDays;
+    const blocks = stockList.map(([sym, name], i) => {
+      const series = buildStockPctSeries(sym, numDays);
+      const color = GRAPH_NAME_COLORS[i % GRAPH_NAME_COLORS.length];
+      const nameHtml = `<div style="font-weight:800; font-size:13px; color:${color}; margin-bottom:4px;">${i+1}. ${sym} <span style="font-weight:400; font-size:10.5px; color:var(--muted);">${name}</span></div>`;
+      const chartHtml = series.length >= 2
+        ? renderPctLineSVG(series)
+        : `<div class="stock-empty" style="padding:14px 0;">${label}-க்கு இன்னும் போதுமான 15-min Data இல்ல (${series.length} Tick மட்டும்).</div>`;
+      return `<div style="border-bottom:1px solid var(--line); padding:10px 4px;">${nameHtml}${chartHtml}</div>`;
+    }).join("");
+    el.innerHTML = `<div style="font-size:10.5px; color:var(--muted); margin-bottom:6px;">📊 ${label} — 15-min Strike Rate (Profit/Loss %)</div>
+      <div style="max-height:65vh; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:4px 8px;">${blocks}</div>`;
+  }
+  const allStocksGraph1DBtnEl = $("allStocksGraph1DBtn");
+  if(allStocksGraph1DBtnEl) allStocksGraph1DBtnEl.addEventListener("click", () => renderAllStocksGraphs(1, "1-Day (இன்றைக்கு)"));
+  const allStocksGraph3DBtnEl = $("allStocksGraph3DBtn");
+  if(allStocksGraph3DBtnEl) allStocksGraph3DBtnEl.addEventListener("click", () => renderAllStocksGraphs(3, "So-Far 3-Days"));
+  const allStocksGraph7DBtnEl = $("allStocksGraph7DBtn");
+  if(allStocksGraph7DBtnEl) allStocksGraph7DBtnEl.addEventListener("click", () => renderAllStocksGraphs(7, "So-Far 7-Days"));
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Merged Graph — explicit user instruction (Sep 2026, Tamil): "3
+  // Graphs (1D/3D/7D) Merge ஆகி, 3 Colors-ல் ஒரே Chart-ல் என்ன Exact-ஆ
+  // ஆச்சுன்னு காட்டணும் — 15-min Strike Rate Value-உடன்". Each scope
+  // gets a FIXED distinct color (not tied to profit/loss sign here,
+  // since 3 lines need to stay visually distinguishable from each
+  // other) — 1-Day=Blue, 3-Day=Orange, 7-Day=Purple — with a legend.
+  // ══════════════════════════════════════════════════════════════════
+  function renderMergedLineSVG(series1, series3, series7){
+    const maxLen = Math.max(series1.length, series3.length, series7.length, 1);
+    const W = Math.max(320, maxLen * 14), H = 120, padL = 34, padR = 10, padT = 20, padB = 16;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const allVals = [0, ...series1, ...series3, ...series7];
+    let minV = Math.min(...allVals), maxV = Math.max(...allVals);
+    if(minV === maxV){ minV -= 1; maxV += 1; }
+    const pad = (maxV - minV) * 0.12;
+    minV -= pad; maxV += pad;
+    const yFor = v => padT + (1 - (v - minV)/(maxV - minV)) * plotH;
+    function xForSeries(len, i){ return padL + (len <= 1 ? plotW/2 : (i/(len-1)) * plotW); }
+    const zeroY = yFor(0);
+    let svg = `<line x1="${padL}" y1="${zeroY.toFixed(1)}" x2="${W-padR}" y2="${zeroY.toFixed(1)}" stroke="#3a3f38" stroke-width="1" stroke-dasharray="3,2"/>`;
+    svg += `<text x="2" y="${(zeroY+3).toFixed(1)}" font-size="8" fill="#8A8F98">0%</text>`;
+    function drawSeries(series, color){
+      if(series.length < 2) return "";
+      const pts = series.map((v,i) => `${xForSeries(series.length,i).toFixed(1)},${yFor(v).toFixed(1)}`).join(" ");
+      let s = `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8" opacity="0.9"/>`;
+      const lastI = series.length - 1;
+      s += `<circle cx="${xForSeries(series.length,lastI).toFixed(1)}" cy="${yFor(series[lastI]).toFixed(1)}" r="2.8" fill="${color}"/>`;
+      return s;
+    }
+    svg += drawSeries(series1, "#4a90d9"); // 1-Day — Blue
+    svg += drawSeries(series3, "#ff8c42"); // So-Far 3-Days — Orange
+    svg += drawSeries(series7, "#ab47bc"); // So-Far 7-Days — Purple
+    return `<div style="overflow-x:auto;"><svg viewBox="0 0 ${W} ${H}" style="width:${W}px; max-width:none; height:120px; display:block;">${svg}</svg></div>
+      <div style="display:flex; gap:12px; font-size:9.5px; margin-top:4px;">
+        <span style="color:#4a90d9;">■ 1-Day</span>
+        <span style="color:#ff8c42;">■ So-Far 3-Days</span>
+        <span style="color:#ab47bc;">■ So-Far 7-Days</span>
+      </div>`;
+  }
+  function renderAllStocksMergedGraphs(){
+    const el = $("allStocksGraphBody");
+    if(!el) return;
+    if(qoCurrentGraphScope === "merged"){
+      el.innerHTML = "";
+      qoCurrentGraphScope = null;
+      return;
+    }
+    qoCurrentGraphScope = "merged";
+    const blocks = stockList.map(([sym, name], i) => {
+      const s1 = buildStockPctSeries(sym, 1);
+      const s3 = buildStockPctSeries(sym, 3);
+      const s7 = buildStockPctSeries(sym, 7);
+      const color = GRAPH_NAME_COLORS[i % GRAPH_NAME_COLORS.length];
+      const nameHtml = `<div style="font-weight:800; font-size:13px; color:${color}; margin-bottom:4px;">${i+1}. ${sym} <span style="font-weight:400; font-size:10.5px; color:var(--muted);">${name}</span></div>`;
+      const anyData = Math.max(s1.length, s3.length, s7.length) >= 2;
+      const chartHtml = anyData ? renderMergedLineSVG(s1, s3, s7) : `<div class="stock-empty" style="padding:14px 0;">இன்னும் போதுமான Data இல்ல.</div>`;
+      return `<div style="border-bottom:1px solid var(--line); padding:10px 4px;">${nameHtml}${chartHtml}</div>`;
+    }).join("");
+    el.innerHTML = `<div style="font-size:10.5px; color:var(--muted); margin-bottom:6px;">🔀 Merged — 1-Day + So-Far 3-Days + So-Far 7-Days (15-min Strike Rate %, ஒரே Chart-ல்)</div>
+      <div style="max-height:65vh; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:4px 8px;">${blocks}</div>`;
+  }
+  const allStocksGraphMergedBtnEl = $("allStocksGraphMergedBtn");
+  if(allStocksGraphMergedBtnEl) allStocksGraphMergedBtnEl.addEventListener("click", renderAllStocksMergedGraphs);
+
+  // 🆕 Zoom In/Out/Reset — explicit user instruction (Sep 2026, Tamil):
+  // "Graphs Zoom பண்ணி பாக்குற மாதிரியும், Minimize பண்ணி பாக்குற
+  // மாதிரியும் இருக்கணும்". Applies a CSS scale transform to the whole
+  // graph container — works uniformly whichever view (1D/3D/7D/Merged)
+  // is currently shown, no need to regenerate the SVGs themselves.
+  let qoGraphZoomLevel = 1;
+  function applyGraphZoom(){
+    const el = $("allStocksGraphBody");
+    if(!el) return;
+    el.style.transform = `scale(${qoGraphZoomLevel})`;
+    el.style.transformOrigin = "top left";
+  }
+  function showZoomControlsIfNeeded(){
+    const controls = $("qoGraphZoomControls");
+    if(controls) controls.style.display = "flex";
+  }
+  const qoZoomInBtnEl = $("qoZoomInBtn");
+  if(qoZoomInBtnEl) qoZoomInBtnEl.addEventListener("click", () => { qoGraphZoomLevel = Math.min(3, qoGraphZoomLevel + 0.25); applyGraphZoom(); });
+  const qoZoomOutBtnEl = $("qoZoomOutBtn");
+  if(qoZoomOutBtnEl) qoZoomOutBtnEl.addEventListener("click", () => { qoGraphZoomLevel = Math.max(0.4, qoGraphZoomLevel - 0.25); applyGraphZoom(); });
+  const qoZoomResetBtnEl = $("qoZoomResetBtn");
+  if(qoZoomResetBtnEl) qoZoomResetBtnEl.addEventListener("click", () => { qoGraphZoomLevel = 1; applyGraphZoom(); });
+  // Show the Zoom controls the first time ANY graph view is opened, and
+  // re-apply the current zoom level to newly-rendered content.
+  [allStocksGraph1DBtnEl, allStocksGraph3DBtnEl, allStocksGraph7DBtnEl, allStocksGraphMergedBtnEl].forEach(btn => {
+    if(btn) btn.addEventListener("click", () => { showZoomControlsIfNeeded(); setTimeout(applyGraphZoom, 30); });
+  });
+
+  // 🆕 Auto-Landscape Attempt — explicit user instruction (Sep 2026,
+  // Tamil): "Graph Button Tap பண்ணா Automatic-ஆ Landscape View Varanum".
+  // ⚠️ Honest limitation: most mobile browsers (especially iOS Safari)
+  // don't allow a webpage to force-rotate the screen — this only works
+  // on some Android/Chrome setups, often only when already fullscreen.
+  // Tries the real API first (silently, best-effort); shows a friendly
+  // one-time-per-tap hint either way, since we can't rely on the lock
+  // actually working across all phones.
+  let qoLandscapeHintShown = false;
+  async function tryAutoLandscape(){
+    try{
+      if(screen.orientation && screen.orientation.lock){
+        await screen.orientation.lock("landscape");
+        return; // succeeded — no need for the manual hint
+      }
+    }catch(e){
+      // Not supported in this browser/context — falls through to the hint below.
+    }
+    if(!qoLandscapeHintShown){
+      qoLandscapeHintShown = true;
+      const hintEl = $("qoLandscapeHint");
+      if(hintEl){
+        hintEl.style.display = "block";
+        setTimeout(() => { hintEl.style.display = "none"; qoLandscapeHintShown = false; }, 6000);
+      }
+    }
+  }
+  [allStocksGraph1DBtnEl, allStocksGraph3DBtnEl, allStocksGraph7DBtnEl, allStocksGraphMergedBtnEl].forEach(btn => {
+    if(btn) btn.addEventListener("click", tryAutoLandscape);
+  });
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Unified Indicator Leaderboard — explicit user instruction (Sep
+  // 2026, Tamil): "6 (7) Indicators-க்கும் ஒரே Table வரணும், Batch
+  // Batch-ஆ பண்ணக்கூடாது". ONE single table: "So Far" row (all days
+  // combined) + one row per recent day — all 7 Indicators as columns,
+  // side by side, in the SAME table. Combines 50 stocks' data for each
+  // Indicator/Date cell. Reuses each backtest function's `perDay` array
+  // (added earlier, non-breaking) for the per-date breakdown.
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Explicit user instruction (Sep 2026, Tamil): "156 Out Of 190 என்பது
+  // Daily இல்ல, 15-min Suggestion எத்தனை Profitable ஆச்சு அப்படி
+  // மாத்தணும்". Switched from Daily Backtest counting to counting EVERY
+  // recorded 15-min TICK (across every stored date, every stock) whose
+  // per-tick field (pct/stPct/bbPct/vwapPct/atrOk/orbStatus/rollingStatus
+  // — the SAME fields recordIntradayTick() already saves) was a Profit
+  // (≥0), a Survived Stop, or an UP reading.
+  // ⚠️ Honest limitation: Yahoo-backfilled historical days only have
+  // Price, not these per-tick Success fields (those are computed LIVE) —
+  // so this Leaderboard's sample size starts small (from whenever this
+  // feature version began running) and grows day by day, unlike the
+  // Daily-Backtest version which had 60 days available instantly.
+  const LEADERBOARD_INDICATORS = [
+    { key:"pivot", label:"🎯Pivot", field:"pct",          mode:"pct" },
+    { key:"st",    label:"📈ST",    field:"stPct",        mode:"pct" },
+    { key:"bb",    label:"📊BB",    field:"bbPct",        mode:"pct" },
+    { key:"atr",   label:"🛑ATR",   field:"atrOk",        mode:"bool" },
+    { key:"orb",   label:"🔔ORB",   field:"orbStatus",    mode:"status" },
+    { key:"roll",  label:"🔁Roll",  field:"rollingStatus", mode:"status" },
+    { key:"vwap",  label:"💹VWAP",  field:"vwapPct",      mode:"pct" },
+    // 🆕 8th — "Average Among All" — explicit user instruction (Sep 2026,
+    // Tamil): "இந்த 7-க்கும் ஆவரேஜ்-ன்னு ஒன்னு இருக்கணும், அது ஒரு
+    // Indication-ஆ வரணும். 9:15-10:00 வரைக்கும் Rolling Range Ready
+    // ஆகாததால் 6 Indicators-ஓட Average மட்டும் வரும், 10:15 முதல் 7-ம்
+    // சேர்ந்து Average வரும் — இதுவும் Correct-ஆ Reflect ஆகணும்". At
+    // each tick, this MAJORITY-VOTES across whichever of the OTHER 7
+    // indicators have a valid reading right then (see tickIsSuccess
+    // below) — so it naturally uses 6 before Rolling warms up, 7 after,
+    // no special-casing needed elsewhere.
+    { key:"avgAll", label:"⭐Avg", field:null, mode:"avgAll" }
+  ];
+  const DAILY_LEADERBOARD_MAX_DAYS = 10; // most recent N dates shown, newest first
+  function tickIsSuccess(ind, tick){
+    if(ind.mode === "avgAll"){
+      let s = 0, t = 0;
+      LEADERBOARD_INDICATORS.forEach(other => {
+        if(other.mode === "avgAll") return; // never average itself in
+        const ok = tickIsSuccess(other, tick);
+        if(ok != null){ t++; if(ok) s++; }
+      });
+      if(t === 0) return null;
+      return (s / t) >= 0.5; // majority of the AVAILABLE indicators voted Success
+    }
+    const v = tick[ind.field];
+    if(v == null) return null; // no reading recorded for this indicator at this tick
+    if(ind.mode === "pct") return v >= 0;      // Profit (≥0) = Success
+    if(ind.mode === "bool") return v === true;  // Stop-Loss survived = Success
+    if(ind.mode === "status") return v === "UP"; // Bullish reading = Success
+    return null;
+  }
+  function computeUnifiedLeaderboard(){
+    const indicatorData = {};
+    LEADERBOARD_INDICATORS.forEach(ind => { indicatorData[ind.key] = { soFar: null, byDate: {} }; });
+    stockList.forEach(([sym]) => {
+      const hist = intradayHistory[sym];
+      if(!hist) return;
+      Object.keys(hist).forEach(dateKey => {
+        (hist[dateKey] || []).forEach(tick => {
+          LEADERBOARD_INDICATORS.forEach(ind => {
+            const ok = tickIsSuccess(ind, tick);
+            if(ok == null) return;
+            const d = indicatorData[ind.key];
+            const b = d.byDate[dateKey] || (d.byDate[dateKey] = { success:0, total:0 });
+            b.total++; if(ok) b.success++;
+          });
+        });
+      });
+    });
+    // 🆕 "So Far" = Method A — explicit user instruction (Sep 2026,
+    // Tamil): "ஒவ்வொரு நாளும் 1 Unit ஆக கருதி, நாட்களின் எண்ணிக்கைக்கு
+    // Divide பண்ணுங்க" — average of each DAY's own % (not pooled Success/
+    // Total across all ticks — that was Method B, replaced now). A day
+    // with 20 suggestions and a day with 5 suggestions count EQUALLY
+    // toward this average. The raw pooled Success/Total (Method B's
+    // numbers) is kept alongside too, purely for display — "how many
+    // 15-min Suggestions total, how many were profitable".
+    LEADERBOARD_INDICATORS.forEach(ind => {
+      const d = indicatorData[ind.key];
+      const dateKeys = Object.keys(d.byDate);
+      if(!dateKeys.length){ d.soFar = null; return; }
+      const pctSum = dateKeys.reduce((s,dk) => s + (d.byDate[dk].success / d.byDate[dk].total * 100), 0);
+      const pctMethodA = pctSum / dateKeys.length;
+      const rawSuccess = dateKeys.reduce((s,dk) => s + d.byDate[dk].success, 0);
+      const rawTotal = dateKeys.reduce((s,dk) => s + d.byDate[dk].total, 0);
+      d.soFar = { pct: pctMethodA, rawSuccess, rawTotal, daysCount: dateKeys.length };
+    });
+    const allDates = new Set();
+    Object.values(indicatorData).forEach(d => Object.keys(d.byDate).forEach(dt => allDates.add(dt)));
+    const sortedDates = [...allDates].sort().reverse().slice(0, DAILY_LEADERBOARD_MAX_DAYS);
+    return { indicatorData, sortedDates };
+  }
+  function renderUnifiedLeaderboard(){
+    const el = $("unifiedLeaderboardBody");
+    if(!el) return;
+    const { indicatorData, sortedDates } = computeUnifiedLeaderboard();
+    const anyData = LEADERBOARD_INDICATORS.some(ind => indicatorData[ind.key].soFar != null);
+    if(!anyData){
+      el.innerHTML = `<div class="stock-empty">App Collect பண்ற Own Data இன்னும் போதாது — கொஞ்ச நாளில் Leaderboard வரும்.</div>`;
+      return;
+    }
+    const CELL = "border:1px solid var(--line); padding:7px 4px; text-align:center;";
+    function dailyCellFor(bucket){
+      if(!bucket || !bucket.total) return `<td style="${CELL} color:var(--muted);">—</td>`;
+      const pct = bucket.success / bucket.total * 100;
+      const cls = pct >= 50 ? "up" : "down";
+      return `<td class="${cls}" style="${CELL} font-weight:700;">${pct.toFixed(0)}%</td>`;
+    }
+    // 🆕 "So Far" cell — Method A (average of each day's own %, so every
+    // day counts equally) shown as the main %, with the raw pooled
+    // Suggestion count shown underneath in small text — explicit user
+    // instruction (Sep 2026, Tamil): "இந்த % பக்கத்துல எத்தனை 15-min
+    // Suggestion Total-ஆ வந்தது, அதுல எத்தனை Profitable ஆச்சு-ன்னும்
+    // Status வரணும்".
+    function soFarCellFor(soFar){
+      if(!soFar) return `<td style="${CELL} color:var(--muted);">—</td>`;
+      const cls = soFar.pct >= 50 ? "up" : "down";
+      return `<td class="${cls}" style="${CELL} font-weight:700;">${soFar.pct.toFixed(1)}%<div style="font-size:8.5px; color:var(--muted); font-weight:400;">${soFar.rawSuccess}/${soFar.rawTotal}</div></td>`;
+    }
+    const colgroup = `<colgroup><col style="width:22%;">${LEADERBOARD_INDICATORS.map(()=>'<col style="width:11%;">').join("")}</colgroup>`;
+    const headerHtml = `<tr style="background:var(--card2); color:var(--gold); font-size:10px;">
+        <th style="${CELL} text-align:left; background:var(--card2);">Date</th>` +
+      LEADERBOARD_INDICATORS.map(ind => `<th style="${CELL} background:var(--card2);">${ind.label}</th>`).join("") + `</tr>`;
+    let rowsHtml = `<tr style="background:rgba(212,175,55,0.10); font-weight:700;">
+        <td style="${CELL} text-align:left;">So Far</td>` +
+      LEADERBOARD_INDICATORS.map(ind => soFarCellFor(indicatorData[ind.key].soFar)).join("") + `</tr>`;
+    sortedDates.forEach((date, idx) => {
+      const zebra = idx % 2 === 1 ? "background:var(--card2);" : "";
+      rowsHtml += `<tr style="${zebra}"><td style="${CELL} text-align:left; white-space:nowrap; color:var(--muted); font-size:10px;">${date}</td>` +
+        LEADERBOARD_INDICATORS.map(ind => dailyCellFor(indicatorData[ind.key].byDate[date])).join("") + `</tr>`;
+    });
+    el.innerHTML = `<table class="strike-table" style="border-collapse:collapse; font-size:11px; width:100%; border:1px solid var(--line);">
+      ${colgroup}
+      <thead>${headerHtml}</thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>`;
+
+    // 🆕 Ranked "So Far" Summary — sorts the SAME Method-A "So Far" %
+    // Best-to-Worst, each line also showing the raw Suggestion count.
+    const rankedSoFar = LEADERBOARD_INDICATORS
+      .map(ind => ({ label: ind.label, soFar: indicatorData[ind.key].soFar }))
+      .filter(r => r.soFar != null)
+      .sort((a,b) => b.soFar.pct - a.soFar.pct);
+    const rankedHtml = rankedSoFar.map((r, i) => {
+      const cls = r.soFar.pct >= 50 ? "up" : "down";
+      const medal = i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : `${i+1}.`;
+      return `<div class="top-item">
+        <span class="tname"><span class="sym">${medal} ${r.label}</span></span>
+        <span class="tstrike ${cls}">${r.soFar.pct.toFixed(1)}% (${r.soFar.rawSuccess}/${r.soFar.rawTotal} Suggestions, ${r.soFar.daysCount} Days)</span>
+      </div>`;
+    }).join("");
+    const rankedEl = $("soFarRankedBody");
+    if(rankedEl) rankedEl.innerHTML = rankedHtml || `<div class="stock-empty">Data இன்னும் போதாது.</div>`;
+  }
+
   function renderN50List(filterText){
     const body = $("n50ListBody");
     const q = (filterText || "").trim().toUpperCase();
@@ -2042,21 +4355,160 @@
     }
     body.innerHTML = rows.map(([sym, name]) => {
       const has = n50HasData(sym);
+      // 🆕 Per-stock "Strike Rate Today" badge — explicit user instruction
+      // (Sep 2026, Tamil): "ஒவ்வொரு Stock-க்கும் பக்கத்துல ஒரு Icon —
+      // Strike Rate Positive-ஆ இருந்தா Green-ல எத்தனை %, Loss-ல இருந்தா
+      // Red-ல Strike Rate காட்டணும்". Uses the SAME own-collected daily
+      // history (ownDailyHistory) as Top Performers — refreshes
+      // automatically on every 15-min N50 auto-refresh tick, since that
+      // tick already re-calls renderN50List() when this list is open.
+      const ownDays = ownDailyHistory[sym];
+      let strikeBadge = `<span class="signal-badge flat">🎯 Strike Rate: —</span>`;
+      if(ownDays && ownDays.length >= 4){
+        const r = backtestPivotSuccess(ownDays, false);
+        if(r.total >= 3){
+          const pct = r.success / r.total * 100;
+          strikeBadge = `<span class="signal-badge ${pct >= 50 ? "up" : "down"}">🎯 ${pct.toFixed(0)}% (${r.success}/${r.total})</span>`;
+        }
+      }
       return `<div class="n50-item" data-sym="${sym}">
         <span><span class="sym">${sym}</span><span class="cname">${name}</span></span>
-        <span class="n50-tag ${has ? "saved" : "empty"}">${has ? "✓ Fetched" : "Tap பண்ணுங்க"}</span>
+        <span style="display:flex; align-items:center; gap:6px;">
+          ${strikeBadge}
+          <span class="n50-tag empty" data-ticklog-sym="${sym}" title="Today All 15-min Rate">🕒 15-min</span>
+          <span class="n50-tag ${has ? "saved" : "empty"}">${has ? "✓ Fetched" : "Tap பண்ணுங்க"}</span>
+        </span>
       </div>`;
     }).join("");
     body.querySelectorAll(".n50-item").forEach(el => {
       el.addEventListener("click", () => openN50Form(el.getAttribute("data-sym")));
     });
+    body.querySelectorAll("[data-ticklog-sym]").forEach(el => {
+      el.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        openN50TickLog(el.getAttribute("data-ticklog-sym"));
+      });
+    });
   }
+
+  // 🆕 Today's All 15-min Tick Log view — per stock, showing every 15-min
+  // reading captured since this morning (see recordIntradayTick above).
+  function openN50TickLog(sym){
+    const stockRow = stockList.find(([s]) => s === sym);
+    const name = stockRow ? stockRow[1] : sym;
+    $("n50TickLogTitle").textContent = `🕒 ${sym} — Today All 15-min`;
+    const todayStr = getIstDateStr(Date.now());
+    const isTodayLog = true; // persistent store — today's key just may or may not have entries yet
+    const ticks = (intradayHistory[sym] && intradayHistory[sym][todayStr]) || [];
+    $("n50TickLogSub").textContent = name + (ticks.length ? ` — ${ticks.length} Ticks இன்றைக்கு` : "");
+
+    // 🆕 Explicit user instruction (Sep 2026, Tamil): "Strike Rate என்றது
+    // Success Count / Total Count (Win Rate) தானே — % Values-ஐ Add பண்ணி
+    // Divide பண்ணி Average எடுக்கக்கூடாது". Fixed: "Strike Rate" here now
+    // means the SAME thing it means everywhere else in this app — Success
+    // = that 15-min tick's % was Profit (≥0); Strike Rate = Successful
+    // Ticks / Total Ticks × 100 (a Win Rate/Count, NOT a Mean of the raw
+    // % numbers).
+    const avgEl = $("n50TickLogAvg");
+    const validPcts = ticks.map(t => t.pct).filter(p => p != null);
+    if(!validPcts.length){
+      avgEl.innerHTML = "";
+    }else{
+      const successCount = validPcts.filter(p => p >= 0).length;
+      const strikeRate = successCount / validPcts.length * 100;
+      const isClosedToday = isTodayLog && n50TodayConfirmedFinal; // "Market முடிஞ்ச உடனே" — only flash once genuinely confirmed closed
+      const cls = strikeRate >= 50 ? "up" : "down";
+      const avgText = `${strikeRate >= 50 ? "🟢" : "🔴"} Strike Rate: ${strikeRate.toFixed(0)}% (${successCount}/${validPcts.length})`;
+      const label = isClosedToday ? "📊 Market Close ஆன பிறகு Final Strike Rate" : "📊 இதுவரை Running Strike Rate (Market இன்னும் Open)";
+      avgEl.innerHTML = `<div style="margin:4px 2px 12px; text-align:center;">
+        <div style="font-size:10.5px; color:var(--muted); margin-bottom:6px;">${label}</div>
+        <span class="signal-badge ${cls} ${isClosedToday ? "pl-flash" : ""}" style="font-size:13.5px; padding:7px 16px;">${avgText}</span>
+      </div>`;
+    }
+
+    const bodyEl = $("n50TickLogBody");
+    if(!ticks.length){
+      bodyEl.innerHTML = `<div class="stock-empty">இன்னும் இன்றைக்கு Tick எதுவும் Record ஆகல — Market Open ஆகி, முதல் 15-min Auto-Refresh நடந்த உடனே இங்க Show ஆகும்.</div>`;
+    }else{
+      bodyEl.innerHTML = ticks.map(t => {
+        const pctText = (t.pct == null) ? "—" : `${t.pct >= 0 ? "🟢 +" : "🔴 "}${t.pct.toFixed(2)}%`;
+        const pctClass = (t.pct == null) ? "" : (t.pct >= 0 ? "up" : "down");
+        return `<div class="n50-hgrid"><span>${t.time}</span><span class="v nums">₹${fmt(t.price)}</span><span class="v nums ${pctClass}" style="grid-column:3/5;">${pctText}</span></div>`;
+      }).join("");
+    }
+
+    // 🆕 Other 4 Indicators — 15-min % table + End-of-Day Averages —
+    // explicit user instruction (Sep 2026, Tamil): "Every 15-min Strike
+    // Rate எல்லா Indicator-க்கும் வேணும்". Same reasoning as Pivot's
+    // Average above — flashes only once Market genuinely Confirmed Closed.
+    const otherBodyEl = $("n50TickLogOtherBody");
+    const gridStyle = "grid-template-columns:0.7fr 0.85fr 0.85fr 0.85fr 0.7fr 0.75fr;";
+    if(!ticks.length){
+      otherBodyEl.innerHTML = "";
+    }else{
+      otherBodyEl.innerHTML = ticks.map(t => {
+        const cell = (v) => (v == null) ? "—" : `${v >= 0 ? "+" : ""}${v.toFixed(2)}%`;
+        const cls = (v) => (v == null) ? "" : (v >= 0 ? "up" : "down");
+        const orbCell = t.orbStatus === "UP" ? "🟢 UP" : t.orbStatus === "DOWN" ? "🔴 DOWN" : t.orbStatus === "NEUTRAL" ? "⚪ —" : "—";
+        const rollCell = t.rollingStatus === "UP" ? "🟢 UP" : t.rollingStatus === "DOWN" ? "🔴 DOWN" : t.rollingStatus === "NEUTRAL" ? "⚪ —" : "—";
+        return `<div class="n50-hgrid" style="${gridStyle}"><span>${t.time}</span><span class="v ${cls(t.stPct)}">${cell(t.stPct)}</span><span class="v ${cls(t.bbPct)}">${cell(t.bbPct)}</span><span class="v ${cls(t.vwapPct)}">${cell(t.vwapPct)}</span><span class="v">${orbCell}</span><span class="v">${rollCell}</span></div>`;
+      }).join("");
+    }
+    const otherAvgEl = $("n50TickLogOtherAvg");
+    const isClosedTodayOther = n50TodayConfirmedFinal;
+    function avgBadge(label, key){
+      const vals = ticks.map(t => t[key]).filter(v => v != null);
+      if(!vals.length) return `<span style="font-size:10px; color:var(--muted);">${label}: —</span>`;
+      const successCount = vals.filter(v => v >= 0).length;
+      const rate = successCount / vals.length * 100;
+      const cls = rate >= 50 ? "up" : "down";
+      return `<span class="signal-badge ${cls} ${isClosedTodayOther ? "pl-flash" : ""}" style="font-size:10.5px; padding:4px 8px;">${label}: ${rate.toFixed(0)}% (${successCount}/${vals.length})</span>`;
+    }
+    if(!ticks.length){
+      otherAvgEl.innerHTML = "";
+    }else{
+      const orbCounts = { UP:0, DOWN:0, NEUTRAL:0, total:0 };
+      ticks.forEach(t => { if(t.orbStatus){ orbCounts[t.orbStatus]++; orbCounts.total++; } });
+      const orbBadge = orbCounts.total
+        ? `<span class="signal-badge flat" style="font-size:10.5px; padding:4px 8px;">ORB: 🟢${Math.round(orbCounts.UP/orbCounts.total*100)}% 🔴${Math.round(orbCounts.DOWN/orbCounts.total*100)}% ⚪${Math.round(orbCounts.NEUTRAL/orbCounts.total*100)}% (${orbCounts.total} Windows)</span>`
+        : `<span style="font-size:10px; color:var(--muted);">ORB: —</span>`;
+      const rollCounts = { UP:0, DOWN:0, NEUTRAL:0, total:0 };
+      ticks.forEach(t => { if(t.rollingStatus){ rollCounts[t.rollingStatus]++; rollCounts.total++; } });
+      const rollBadge = rollCounts.total
+        ? `<span class="signal-badge flat" style="font-size:10.5px; padding:4px 8px;">Rolling: 🟢${Math.round(rollCounts.UP/rollCounts.total*100)}% 🔴${Math.round(rollCounts.DOWN/rollCounts.total*100)}% ⚪${Math.round(rollCounts.NEUTRAL/rollCounts.total*100)}% (${rollCounts.total} Windows)</span>`
+        : `<span style="font-size:10px; color:var(--muted);">Rolling: —</span>`;
+      // 🆕 ATR Stop-Loss Survival Rate — % of today's ticks-so-far where
+      // the fixed daily Stop-Loss level was NOT breached. Shown as an
+      // average-row badge (not a full table column) to keep the table
+      // readable on a phone screen.
+      const atrVals = ticks.map(t => t.atrOk).filter(v => v != null);
+      const atrBadge = atrVals.length
+        ? (() => { const survivedCount = atrVals.filter(v => v).length; const rate = survivedCount/atrVals.length*100; return `<span class="signal-badge ${rate>=50?"up":"down"} ${isClosedTodayOther?"pl-flash":""}" style="font-size:10.5px; padding:4px 8px;">ATR Survival: ${rate.toFixed(0)}% (${survivedCount}/${atrVals.length})</span>`; })()
+        : `<span style="font-size:10px; color:var(--muted);">ATR Survival: —</span>`;
+      otherAvgEl.innerHTML = `<div style="margin:4px 2px 12px; text-align:center;">
+        <div style="font-size:10.5px; color:var(--muted); margin-bottom:6px;">${isClosedTodayOther ? "📊 Market Close ஆன பிறகு Final Strike Rate" : "📊 இதுவரை Running Strike Rate (Market இன்னும் Open)"}</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; justify-content:center;">
+          ${avgBadge("SuperTrend", "stPct")} ${avgBadge("Bollinger", "bbPct")} ${avgBadge("VWAP", "vwapPct")} ${orbBadge} ${rollBadge} ${atrBadge}
+        </div>
+      </div>`;
+    }
+
+    $("n50ListView").style.display = "none";
+    $("n50TickLogView").style.display = "flex";
+  }
+  function closeN50TickLog(){
+    $("n50TickLogView").style.display = "none";
+    $("n50ListView").style.display = "flex";
+  }
+  $("n50TickLogBack").addEventListener("click", closeN50TickLog);
 
   function openN50List(){
     renderN50List($("n50Search").value);
     renderTopPerformers();
+      renderUnifiedLeaderboard();
     $("n50ListView").style.display = "flex";
     fetchAllN50History(); // auto-fetch every stock not already cached today, no tap needed
+    backfillIntradayHistoryOnce(); // one-time — pulls past-days' 15-min history directly from Yahoo, no-op if already done
   }
   function closeN50List(){
     $("n50ListView").style.display = "none";
