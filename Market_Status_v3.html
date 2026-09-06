@@ -58,6 +58,26 @@
 
   .section-label{font-size:12px; color:var(--gold); font-weight:700; margin:18px 2px 8px; letter-spacing:0.3px;}
 
+  .paytm-box{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:14px;}
+  .paytm-row{display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap;}
+  .paytm-status{font-size:12px; color:var(--muted);}
+  .paytm-status.on{color:var(--up); font-weight:600;}
+  .paytm-status.off{color:var(--down); font-weight:600;}
+  .paytm-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
+  .paytm-mini{background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:8px; font-size:11px;}
+  .paytm-mini .lbl{color:var(--muted); font-size:10px;}
+  .paytm-mini .val{font-weight:700; font-size:13px; margin-top:2px;}
+  .depth-table{width:100%; border-collapse:collapse; margin-top:8px; font-size:11px;}
+  .depth-table td{padding:3px 4px;}
+  .depth-table .bid{color:var(--up); text-align:right;}
+  .depth-table .ask{color:var(--down); text-align:left;}
+  .paytm-input{width:100%; background:var(--card2); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:8px; font-size:12px; margin-top:6px; box-sizing:border-box;}
+  .paytm-warn{font-size:10.5px; color:var(--down); margin-top:6px; line-height:1.4;}
+  .dryrun-badge{display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px;
+    background:var(--gold-dim); color:#1A1400; margin-left:6px;}
+  .dryrun-badge.live{background:var(--down); color:#fff;}
+
   .stock-card{background:var(--card); border:1px solid var(--line); border-radius:12px;
     padding:10px 12px; margin-bottom:8px;}
   .stock-card .top-row{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
@@ -86,6 +106,54 @@
 
   .err-box{background:#2A1416; border:1px solid #5A2226; color:#F3AEB2; font-size:12px; padding:10px 12px;
     border-radius:10px; margin-bottom:12px; display:none;}
+
+  /* ── 🆕 Candle/Line Chart popup (NIFTY/SENSEX card tap) + inline charts
+     (Nifty 50 Entry கடைசி 7/3 நாட்கள்) — same shared style/renderer. ── */
+  .idx-card{cursor:pointer;}
+  .chart-modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; z-index:40;}
+  .chart-modal{position:fixed; left:0; right:0; bottom:0; background:var(--card); border-top:1px solid var(--line);
+    border-radius:16px 16px 0 0; padding:14px; z-index:41; display:none; max-height:70vh;}
+  .chart-modal-head{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
+  .chart-modal-head .title{flex:1; font-size:14px; font-weight:700;}
+  .chart-modal-head .close{font-size:18px; padding:2px 8px; color:var(--muted);}
+  .chart-toggle-group{display:flex; gap:6px;}
+  .chart-toggle-btn{font-size:11.5px; font-weight:700; padding:5px 10px; border-radius:8px;
+    background:var(--card2); border:1px solid var(--line); color:var(--muted);}
+  .chart-toggle-btn.active{background:var(--gold); color:#1A1400; border-color:var(--gold);}
+  .chart-legend{display:flex; gap:12px; font-size:10.5px; color:var(--muted); margin-top:6px;}
+  .chart-legend span b{color:var(--text);}
+  .n50-chart-row{display:flex; justify-content:flex-end; margin:2px 0 6px;}
+
+  /* ── 🆕 Investment Plan (Intraday Session Pivot Levels) — factual,
+     mechanically-computed reference levels ONLY, never a guarantee. See
+     the disclaimer text rendered with it. ── */
+  .plan-session{background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px;}
+  .plan-session .ptime{font-size:11.5px; font-weight:700; color:var(--gold); margin-bottom:6px;}
+  .plan-session .prow{display:flex; justify-content:space-between; font-size:12px; padding:3px 0;}
+  .plan-session .prow .pl{color:var(--muted);}
+  .plan-session .prow .pv{font-weight:700;}
+  .plan-disclaimer{font-size:10.5px; color:var(--muted); line-height:1.5; margin:2px 2px 10px; padding:8px 10px;
+    background:rgba(229,72,77,0.08); border:1px solid rgba(229,72,77,0.25); border-radius:8px;}
+  .strike-rate-row{display:flex; justify-content:space-between; font-size:11.5px; font-weight:700; margin:2px 2px 8px;}
+
+  /* ── 🆕 Top Performers (Top 10/5/3/1) — explicit user instruction (Sep
+     2026, Tamil): historical-Strike-Rate ranking with a per-tier flashing
+     identifier icon (design left to me) + per-tier Share. ── */
+  .top-tier{margin-bottom:14px;}
+  .top-tier-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+  .top-tier-head .ttitle{font-size:12.5px; font-weight:700; color:var(--gold);}
+  .top-tier-share{font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:8px;
+    background:var(--card2); border:1px solid var(--line); color:var(--text);}
+  .top-group-strike{font-size:11px; color:var(--muted); margin:0 0 8px;}
+  .top-item{display:flex; justify-content:space-between; align-items:center; padding:7px 10px;
+    background:var(--card); border:1px solid var(--line); border-radius:10px; margin-bottom:6px; font-size:12px;}
+  .top-item .tname{display:flex; align-items:center; gap:6px;}
+  .top-item .tname .cname{font-size:10px; color:var(--muted);}
+  .top-item .tstrike{font-weight:700;}
+  .top-badge{display:inline-block; font-size:13px;}
+  .top-badge.flash-fast{animation:topFlash 0.9s infinite;}
+  .top-badge.flash-slow{animation:topFlash 1.7s infinite;}
+  @keyframes topFlash{0%,100%{opacity:1;} 50%{opacity:0.2;}}
 
   /* ── Nifty 50 Manual Entry full-screen view ── */
   .fs-view{position:fixed; inset:0; background:var(--bg); z-index:30; display:none; flex-direction:column;}
@@ -166,6 +234,52 @@
   <div class="status-line" id="proxyBadge"></div>
   <div class="status-line" id="signalStatus"></div>
 
+  <div class="section-label">PAYTM MONEY — LIVE DEPTH &amp; ORDERS</div>
+  <div class="paytm-box">
+    <div class="paytm-row">
+      <div class="paytm-status off" id="paytmStatus">⚪ Connected இல்ல</div>
+      <div class="btn gold" id="paytmConnectBtn" style="flex:none; padding:8px 14px;">Connect</div>
+    </div>
+
+    <div id="paytmToolsWrap" style="display:none;">
+      <div class="paytm-grid">
+        <div class="paytm-mini"><div class="lbl">Exchange</div>
+          <select class="paytm-input" id="paytmExchange" style="margin-top:2px;">
+            <option value="NSE">NSE</option><option value="BSE">BSE</option>
+          </select>
+        </div>
+        <div class="paytm-mini"><div class="lbl">Security ID</div>
+          <input class="paytm-input" id="paytmSecId" placeholder="e.g. 3456" style="margin-top:2px;">
+        </div>
+      </div>
+      <div class="btn" id="paytmDepthBtn" style="margin-top:8px;">📶 Get Live Depth</div>
+      <table class="depth-table" id="paytmDepthTable" style="display:none;"></table>
+
+      <div class="section-label" style="margin-top:16px;">Portfolio</div>
+      <div class="paytm-grid">
+        <div class="btn" id="paytmPositionsBtn">Positions</div>
+        <div class="btn" id="paytmHoldingsBtn">Holdings</div>
+        <div class="btn" id="paytmFundsBtn">Funds</div>
+        <div class="btn" id="paytmOrdersBtn">Order Book</div>
+      </div>
+      <pre id="paytmPortfolioOut" class="stock-empty" style="display:none; text-align:left; white-space:pre-wrap; font-size:10.5px; max-height:220px; overflow:auto;"></pre>
+
+      <div class="section-label" style="margin-top:16px;">Place Order <span class="dryrun-badge" id="paytmDryRunBadge">DRY-RUN</span></div>
+      <div class="paytm-grid">
+        <select class="paytm-input" id="paytmTxnType"><option value="B">BUY</option><option value="S">SELL</option></select>
+        <input class="paytm-input" id="paytmQty" placeholder="Quantity" type="number">
+        <select class="paytm-input" id="paytmOrderType"><option value="MKT">Market</option><option value="LMT">Limit</option></select>
+        <input class="paytm-input" id="paytmPrice" placeholder="Price (Limit order only)" type="number">
+      </div>
+      <label style="display:flex; align-items:center; gap:6px; margin-top:8px; font-size:12px; color:var(--muted);">
+        <input type="checkbox" id="paytmLiveToggle"> நான் தெரிஞ்சே REAL order போடறேன் (dry-run OFF)
+      </label>
+      <div class="paytm-warn">⚠️ Live mode-ல order போட்டா real money-ல execute ஆகும் — Undo பண்ண முடியாது. Security ID தப்பா இருந்தா தப்பான stock-ல order போகும், அதனால முதல்ல dry-run-ல சரிபாருங்க.</div>
+      <div class="btn gold" id="paytmPlaceBtn" style="margin-top:8px;">Place Order</div>
+      <pre id="paytmOrderOut" class="stock-empty" style="display:none; text-align:left; white-space:pre-wrap; font-size:10.5px; margin-top:8px;"></pre>
+    </div>
+  </div>
+
   <div class="section-label">NIFTY 50 STOCKS</div>
   <div class="signal-disclaimer">⚠️ 🟢 BUY / 🔴 SELL / 🟡 HOLD — SMA(5 vs 20 நாள்) &amp; RSI(14) Technical Indicator வெச்சு தானாக கணக்கிடப்பட்டது. இது Investment Advice இல்ல, Reference-க்கு மட்டும் — முடிவு எடுக்குறதுக்கு முன்ன உங்க சொந்த ஆராய்ச்சி பாருங்க.</div>
   <div id="stockBody">
@@ -187,6 +301,23 @@
   </div>
 </div>
 
+<!-- 🆕 NIFTY/SENSEX Candle-Line Chart popup — explicit user instruction
+     (Sep 2026, Tamil): index card தட்டினா ✕ Close + 🕯️Candle/📈Line
+     ரெண்டு Option-உம் காட்டணும். -->
+<div class="chart-modal-backdrop" id="chartModalBackdrop"></div>
+<div class="chart-modal" id="chartModal">
+  <div class="chart-modal-head">
+    <span class="title" id="chartModalTitle">NIFTY 50 — இன்று</span>
+    <span class="chart-toggle-group">
+      <span class="chart-toggle-btn" id="chartModeCandle">🕯️ Candle</span>
+      <span class="chart-toggle-btn" id="chartModeLine">📈 Line</span>
+    </span>
+    <span class="close" id="chartModalClose">✕</span>
+  </div>
+  <div id="chartModalSvgWrap"></div>
+  <div class="chart-legend" id="chartModalLegend"></div>
+</div>
+
 <!-- ── Nifty 50 Manual Entry: List view (50 members) ── -->
 <div class="fs-view" id="n50ListView">
   <div class="fs-header">
@@ -194,6 +325,11 @@
     <h2>📊 Nifty 50 — 50 Members</h2>
   </div>
   <div class="fs-body">
+    <div class="n50-group" id="topPerformersPanel">
+      <div class="glabel">🏆 Top Performers — Historical Strike Rate அடிப்படையில் (Pivot Backtest)</div>
+      <div class="plan-disclaimer">⚠️ இது ஒரு Ranking மட்டும் — ஒவ்வொரு Stock-ஓட கடந்த நாட்களில் Pivot Point Suggestion எத்தனை தடவை Success ஆச்சுன்னு (Historical Backtest) வெச்சு தான் இந்த Order தீர்மானிக்கப்படுது. Future Guarantee இல்ல, குறைந்தது 3 நாள் Backtestable Data இருக்குற Stocks மட்டும் Rank ஆகும்.</div>
+      <div id="topPerformersBody"><div class="stock-empty">Nifty 50 Entry Data Fetch ஆகும்போது இங்க தெரியும்…</div></div>
+    </div>
     <input type="text" class="n50-search" id="n50Search" placeholder="Symbol / Name Search பண்ணுங்க…">
     <div class="n50-status" id="n50ListStatus"></div>
     <div id="n50ListBody"></div>
@@ -205,6 +341,7 @@
   <div class="fs-header">
     <span class="back" id="n50FormBack">←</span>
     <h2 id="n50FormTitle">Stock</h2>
+    <span class="back" id="n50FormShareBtn" title="Share">📤</span>
     <span class="back" id="n50FormRefreshBtn" title="Refresh">🔄</span>
   </div>
   <div class="fs-body">
@@ -213,13 +350,51 @@
 
     <div class="n50-group">
       <div class="glabel">கடைசி 7 நாட்கள் — Opening / Closing / Up-Down</div>
+      <div class="n50-chart-row">
+        <span class="chart-toggle-group">
+          <span class="chart-toggle-btn" data-n50chart="7" data-n50mode="candle">🕯️ Candle</span>
+          <span class="chart-toggle-btn" data-n50chart="7" data-n50mode="line">📈 Line</span>
+        </span>
+      </div>
+      <div id="n50Chart7"></div>
+      <div id="n50Strike7"></div>
       <div id="n50Hist7"></div>
     </div>
 
     <div class="n50-group">
       <div class="glabel">கடைசி 3 நாட்கள் — Opening / Closing / Up-Down</div>
+      <div class="n50-chart-row">
+        <span class="chart-toggle-group">
+          <span class="chart-toggle-btn" data-n50chart="3" data-n50mode="candle">🕯️ Candle</span>
+          <span class="chart-toggle-btn" data-n50chart="3" data-n50mode="line">📈 Line</span>
+        </span>
+      </div>
+      <div id="n50Chart3"></div>
+      <div id="n50Strike3"></div>
       <div id="n50Hist3"></div>
     </div>
+
+    <div class="n50-group">
+      <div class="glabel">📋 Investment Plan — Intraday Session Reference Levels</div>
+      <div class="plan-disclaimer">⚠️ இது ஒரு Guarantee இல்ல — Pivot Point எனும் ஒரு பொது Technical Analysis Method வெச்சு, முந்தைய நாள் High/Low/Close-ஐ வெச்சு மட்டும் Mechanical-ஆ கணக்கிடப்பட்ட Reference Levels இது. உண்மையான Live Market நடத்தை (News/Volume/Sentiment) இதுல சேரல. இதை மட்டும் வெச்சு Trade பண்ணாதீங்க — உங்க சொந்த ஆராய்ச்சி + Risk Capacity வெச்சு தான் இறுதி முடிவு எடுக்கணும். (Strike Rate கீழ Historical Backtest-ஐ மட்டும் காட்டுது — Future Guarantee இல்ல.)</div>
+      <div id="n50InvestPlan"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 🆕 Share sheet — explicit user instruction (Sep 2026, Tamil): "ஷேர்
+     பட்டன், WhatsApp Normal + WhatsApp Business ரெண்டும் வரணும், Image-ஆவும்
+     Share பண்ண முடியணும்". A custom small sheet (not the plain OS share
+     sheet, since that can't be limited to just these specific options). -->
+<div class="sheet-backdrop" id="shareSheetBackdrop"></div>
+<div class="sheet" id="shareSheet">
+  <h2>📤 Share பண்ணுங்க</h2>
+  <p id="shareSheetSub"></p>
+  <div class="row" style="flex-direction:column; gap:8px;">
+    <div class="btn gold" id="shareWaNormalBtn">📱 WhatsApp (Normal) — Text</div>
+    <div class="btn gold" id="shareWaBusinessBtn">💼 WhatsApp Business — Text</div>
+    <div class="btn" id="shareImageBtn">🖼️ Image (JPG) ஆக Share/Download</div>
+    <div class="btn" id="shareSheetCloseBtn">Close</div>
   </div>
 </div>
 
@@ -286,6 +461,11 @@
   }
 
   let stockList = loadStockList();
+  // 🆕 Latest NIFTY/SENSEX quote (incl. today's 5-min candles for the
+  // Candle/Line chart popup) — kept live-updated on every fetchAll(),
+  // separate from the one-time `cache` const below so the chart always
+  // has today's freshest data without a second API call.
+  let latestIndexData = { nifty: null, sensex: null };
 
   // ── Data fetch: Yahoo Finance's public chart/quote endpoints have no
   // official CORS allowance for arbitrary browser origins, so requests go
@@ -469,8 +649,20 @@
       }
       if(sumV > 0) vwap = sumPV/sumV;
 
+      const ts = result.timestamp || [];
+      // 🆕 Candle-Line Chart — explicit user instruction (Sep 2026, Tamil):
+      // NIFTY 50/SENSEX card தட்டினா Candle/Line chart popup வரணும். Same
+      // 5-min candles already fetched above (for VWAP) are kept here too,
+      // so the chart needs zero extra API calls — just reuses this data.
+      const candles = [];
+      for(let i=0;i<ts.length;i++){
+        const o=opens[i], h=highs[i], l=lows[i], c=closesArr[i];
+        if(c==null) continue;
+        candles.push({ t: ts[i]*1000, o: (o==null?c:o), h: (h==null?c:h), l: (l==null?c:l), c });
+      }
+
       if(ltp === null) return { ok:false };
-      return { open: todayOpen, ltp, prevClose, dayHigh, dayLow, volume, vwap, ok: true };
+      return { open: todayOpen, ltp, prevClose, dayHigh, dayLow, volume, vwap, candles, ok: true };
     }catch(e){
       return { ok:false };
     }
@@ -517,6 +709,104 @@
   function arrow(change){
     if(change > 0) return "▲"; if(change < 0) return "▼"; return "•";
   }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Candle/Line Chart — explicit user instruction (Sep 2026, Tamil):
+  // "நிஃப்டி 50 ஐகானை டச் பண்ணா கிராஸ் வரணும் ரெண்டு ஆப்ஷன் — கேண்டில்,
+  // லைன்". Lightweight inline-SVG renderer, zero external library (same
+  // dependency-free style as the rest of this single-file app) — used
+  // for BOTH the NIFTY/SENSEX today-intraday popup AND the Nifty 50
+  // Entry கடைசி 7/3 நாட்கள் charts below (same function, different data).
+  // series: array of {t (ms epoch, informational only), o,h,l,c}.
+  // ══════════════════════════════════════════════════════════════════
+  function renderPriceChartSVG(containerId, series, mode){
+    const el = $(containerId);
+    if(!el) return;
+    const clean = (series || []).filter(d => d && d.c != null);
+    if(!clean.length){ el.innerHTML = `<div class="stock-empty">Chart Data கிடைக்கல்.</div>`; return; }
+    const W = 320, H = 150, padL = 40, padR = 8, padT = 10, padB = 8;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    let minV = Infinity, maxV = -Infinity;
+    clean.forEach(d => {
+      const lo = mode === "candle" ? Math.min(d.o, d.c, d.l != null ? d.l : d.c) : d.c;
+      const hi = mode === "candle" ? Math.max(d.o, d.c, d.h != null ? d.h : d.c) : d.c;
+      if(lo < minV) minV = lo;
+      if(hi > maxV) maxV = hi;
+    });
+    if(minV === maxV){ minV -= 1; maxV += 1; }
+    const pad = (maxV - minV) * 0.08;
+    minV -= pad; maxV += pad;
+    const xFor = i => padL + (clean.length === 1 ? plotW/2 : (i/(clean.length-1)) * plotW);
+    const yFor = v => padT + (1 - (v - minV)/(maxV - minV)) * plotH;
+    let svg = "";
+    // 3 horizontal reference lines with the price value printed on the left.
+    for(let g = 0; g <= 2; g++){
+      const v = minV + (maxV - minV) * g / 2;
+      const y = yFor(v);
+      svg += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W-padR}" y2="${y.toFixed(1)}" stroke="#282D37" stroke-width="1"/>`;
+      svg += `<text x="2" y="${(y+3).toFixed(1)}" font-size="9" fill="#8A8F98">${v.toFixed(v < 100 ? 2 : 0)}</text>`;
+    }
+    if(mode === "line"){
+      const pts = clean.map((d,i) => `${xFor(i).toFixed(1)},${yFor(d.c).toFixed(1)}`).join(" ");
+      svg += `<polyline points="${pts}" fill="none" stroke="#D4A72C" stroke-width="2"/>`;
+      // Small dot on the very last point so the latest value stands out.
+      const lastX = xFor(clean.length-1), lastY = yFor(clean[clean.length-1].c);
+      svg += `<circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="3" fill="#D4A72C"/>`;
+    } else {
+      const bw = Math.max(2, Math.min(16, (plotW / clean.length) * 0.6));
+      clean.forEach((d,i) => {
+        const x = xFor(i);
+        const up = d.c >= d.o;
+        const color = up ? "#2FBF71" : "#E5484D";
+        const hi = d.h != null ? d.h : Math.max(d.o, d.c);
+        const lo = d.l != null ? d.l : Math.min(d.o, d.c);
+        svg += `<line x1="${x.toFixed(1)}" y1="${yFor(hi).toFixed(1)}" x2="${x.toFixed(1)}" y2="${yFor(lo).toFixed(1)}" stroke="${color}" stroke-width="1.2"/>`;
+        const bodyTop = yFor(Math.max(d.o, d.c)), bodyBot = yFor(Math.min(d.o, d.c));
+        svg += `<rect x="${(x-bw/2).toFixed(1)}" y="${bodyTop.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1, bodyBot-bodyTop).toFixed(1)}" fill="${color}"/>`;
+      });
+    }
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%; height:150px; display:block;">${svg}</svg>`;
+  }
+
+  // ── NIFTY/SENSEX card tap → Candle/Line popup ──
+  const LS_CHART_MODE_KEY = "marketStatus_chartMode_v1";
+  let chartMode = (function(){ try{ return localStorage.getItem(LS_CHART_MODE_KEY) || "candle"; }catch(e){ return "candle"; } })();
+  let chartModalActiveIdx = null; // "nifty" | "sensex" — which index is currently shown in the popup
+
+  function candlesToChartSeries(candles){
+    return (candles || []).map(c => ({ t:c.t, o:c.o, h:c.h, l:c.l, c:c.c }));
+  }
+  function renderChartModal(){
+    const data = latestIndexData[chartModalActiveIdx];
+    const candles = data && data.candles ? data.candles : [];
+    $("chartModeCandle").classList.toggle("active", chartMode === "candle");
+    $("chartModeLine").classList.toggle("active", chartMode === "line");
+    renderPriceChartSVG("chartModalSvgWrap", candlesToChartSeries(candles), chartMode);
+    if(candles.length){
+      const first = candles[0], last = candles[candles.length-1];
+      $("chartModalLegend").innerHTML = `<span>Open <b class="nums">${fmt(first.o)}</b></span><span>LTP <b class="nums">${fmt(last.c)}</b></span><span>High <b class="nums">${fmt(Math.max(...candles.map(c=>c.h)))}</b></span><span>Low <b class="nums">${fmt(Math.min(...candles.map(c=>c.l)))}</b></span>`;
+    } else {
+      $("chartModalLegend").innerHTML = "";
+    }
+  }
+  function openChartModal(idx, title){
+    chartModalActiveIdx = idx;
+    $("chartModalTitle").textContent = title;
+    $("chartModalBackdrop").style.display = "block";
+    $("chartModal").style.display = "block";
+    renderChartModal();
+  }
+  function closeChartModal(){
+    $("chartModalBackdrop").style.display = "none";
+    $("chartModal").style.display = "none";
+  }
+
+  document.querySelector(".idx-row .idx-card:nth-child(1)").addEventListener("click", () => openChartModal("nifty", "NIFTY 50 — இன்று"));
+  document.querySelector(".idx-row .idx-card:nth-child(2)").addEventListener("click", () => openChartModal("sensex", "BSE SENSEX — இன்று"));
+  $("chartModalBackdrop").addEventListener("click", closeChartModal);
+  $("chartModalClose").addEventListener("click", closeChartModal);
+  $("chartModeCandle").addEventListener("click", () => { chartMode = "candle"; try{ localStorage.setItem(LS_CHART_MODE_KEY, chartMode); }catch(e){} renderChartModal(); });
+  $("chartModeLine").addEventListener("click", () => { chartMode = "line"; try{ localStorage.setItem(LS_CHART_MODE_KEY, chartMode); }catch(e){} renderChartModal(); });
 
   function renderIndex(prefix, data){
     if(!data || !data.ok){
@@ -641,6 +931,8 @@
       ]);
       renderIndex("nifty", niftyData);
       renderIndex("sensex", sensexData);
+      if(niftyData.ok) latestIndexData.nifty = niftyData;
+      if(sensexData.ok) latestIndexData.sensex = sensexData;
       if(!niftyData.ok || !sensexData.ok) anyFail = true;
 
       // 50 stocks fetched via the same reliable v8/chart endpoint as the
@@ -727,11 +1019,163 @@
   checkLocalProxy();
   setInterval(checkLocalProxy, 20000);
 
+  // ===================================================================
+  // PAYTM MONEY INTEGRATION
+  // -------------------------------------------------------------------
+  // SAFETY: this talks to YOUR OWN dedicated cloud proxy (Render/Railway),
+  // never to any third-party relay. Every request carries a secret
+  // PAYTM_ACCESS_TOKEN header that only your proxy recognizes, so a
+  // stranger who finds the proxy's public URL can't use it. The Paytm
+  // API Secret itself never leaves the cloud proxy — it's set there as
+  // an environment variable, never sent to or stored in this page.
+  // ===================================================================
+  // Cloud proxy URL (Render) — dedicated proxy for this app's Paytm Money integration
+  const PAYTM_PROXY = "https://paytm-money-proxy.onrender.com";
+  // Must exactly match the PROXY_ACCESS_TOKEN env var set on Render
+  const PAYTM_ACCESS_TOKEN = "mkt9x7qzpaytm2026";
+
+  async function paytmFetch(path, opts){
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PROXY_TIMEOUT_MS);
+    try{
+      const merged = Object.assign({ cache:"no-store", signal: controller.signal }, opts || {});
+      merged.headers = Object.assign({ "x-proxy-token": PAYTM_ACCESS_TOKEN }, (opts && opts.headers) || {});
+      const res = await fetch(PAYTM_PROXY + path, merged);
+      return await res.json();
+    }catch(e){
+      return { error: "proxy_unreachable", message: "Cloud Paytm proxy-ஐ அடைய முடியல். PAYTM_PROXY URL சரியா இருக்கானு பாருங்க." };
+    }finally{
+      clearTimeout(timer);
+    }
+  }
+
+  async function paytmRefreshStatus(){
+    const st = await paytmFetch("/paytm/status");
+    const badge = $("paytmStatus");
+    const wrap = $("paytmToolsWrap");
+    const btn = $("paytmConnectBtn");
+    if(st && st.connected){
+      badge.textContent = "🟢 Connected";
+      badge.className = "paytm-status on";
+      wrap.style.display = "block";
+      btn.textContent = "Disconnect";
+    } else {
+      badge.textContent = st && st.error === "proxy_unreachable" ? "⚪ Proxy Run ஆகல" : "⚪ Connected இல்ல";
+      badge.className = "paytm-status off";
+      wrap.style.display = "none";
+      btn.textContent = "Connect";
+    }
+  }
+
+  $("paytmConnectBtn").addEventListener("click", async () => {
+    const st = await paytmFetch("/paytm/status");
+    if(st && st.connected){
+      await paytmFetch("/paytm/logout", { method:"GET" });
+      paytmRefreshStatus();
+    } else {
+      // Opens the Paytm login page in a new tab; the local proxy handles
+      // the redirect callback and stores the token itself.
+      window.open(PAYTM_PROXY + "/paytm/login", "_blank");
+      $("paytmStatus").textContent = "🟡 Login tab-ல் complete பண்ணுங்க, அப்புறம் இங்க திரும்பி Refresh பண்ணுங்க";
+    }
+  });
+
+  $("paytmDepthBtn").addEventListener("click", async () => {
+    const exch = $("paytmExchange").value;
+    const secId = $("paytmSecId").value.trim();
+    if(!secId){ alert("Security ID கொடுங்க"); return; }
+    const r = await paytmFetch(`/paytm/depth?exchange=${exch}&security_id=${encodeURIComponent(secId)}`);
+    const table = $("paytmDepthTable");
+    if(!r || !r.ok){
+      table.style.display = "none";
+      alert("Depth கிடைக்கல: " + (r && (r.message || r.error) || "unknown error"));
+      return;
+    }
+    // Render whatever depth/bid-ask arrays the SDK returned. Field names
+    // depend on the SDK response shape — adjust the paths below if your
+    // installed SDK version nests depth data differently.
+    const d = r.data || {};
+    const depth = d.depth || d.marketDepth || (Array.isArray(d) ? d[0] : null) || {};
+    const buy = depth.buy || depth.bid || [];
+    const sell = depth.sell || depth.ask || [];
+    const rows = Math.max(buy.length, sell.length, 5);
+    let html = "<tr><td class='bid'><b>BID Qty/Price</b></td><td class='ask'><b>ASK Price/Qty</b></td></tr>";
+    for(let i=0;i<rows;i++){
+      const b = buy[i] || {};
+      const s = sell[i] || {};
+      html += `<tr><td class="bid">${b.quantity ?? "—"} @ ${b.price ?? "—"}</td><td class="ask">${s.price ?? "—"} @ ${s.quantity ?? "—"}</td></tr>`;
+    }
+    table.innerHTML = html;
+    table.style.display = "table";
+  });
+
+  async function paytmShowPortfolio(path, label){
+    const out = $("paytmPortfolioOut");
+    out.style.display = "block";
+    out.textContent = `${label} Loading…`;
+    const r = await paytmFetch(path);
+    out.textContent = r && r.ok ? JSON.stringify(r.data, null, 2) : (r && (r.message || r.error) || "Failed");
+  }
+  $("paytmPositionsBtn").addEventListener("click", () => paytmShowPortfolio("/paytm/positions", "Positions"));
+  $("paytmHoldingsBtn").addEventListener("click", () => paytmShowPortfolio("/paytm/holdings", "Holdings"));
+  $("paytmFundsBtn").addEventListener("click", () => paytmShowPortfolio("/paytm/funds", "Funds"));
+  $("paytmOrdersBtn").addEventListener("click", () => paytmShowPortfolio("/paytm/orders", "Order Book"));
+
+  $("paytmLiveToggle").addEventListener("change", (e) => {
+    const badge = $("paytmDryRunBadge");
+    if(e.target.checked){
+      badge.textContent = "LIVE — REAL ORDER";
+      badge.classList.add("live");
+    } else {
+      badge.textContent = "DRY-RUN";
+      badge.classList.remove("live");
+    }
+  });
+
+  $("paytmPlaceBtn").addEventListener("click", async () => {
+    const exch = $("paytmExchange").value;
+    const secId = $("paytmSecId").value.trim();
+    const txnType = $("paytmTxnType").value;
+    const qty = parseInt($("paytmQty").value, 10);
+    const orderType = $("paytmOrderType").value;
+    const price = parseFloat($("paytmPrice").value) || 0;
+    const isLive = $("paytmLiveToggle").checked;
+
+    if(!secId || !qty){ alert("Security ID மற்றும் Quantity கொடுங்க"); return; }
+
+    const body = {
+      txn_type: txnType, exchange: exch, segment: "E", product: "C",
+      security_id: secId, quantity: qty, validity: "DAY",
+      order_type: orderType, price: price, off_mkt_flag: false,
+      dry_run: !isLive,
+    };
+
+    if(isLive){
+      const sure = confirm(
+        `⚠️ REAL ORDER — Undo பண்ண முடியாது\n\n${txnType==="B"?"BUY":"SELL"} ${qty} x SecID ${secId} (${exch})\nOrder Type: ${orderType}${orderType==="LMT" ? ", Price: "+price : ""}\n\nஇது உண்மையான money-ல execute ஆகும். Confirm ஆ?`
+      );
+      if(!sure) return;
+    }
+
+    const out = $("paytmOrderOut");
+    out.style.display = "block";
+    out.textContent = "Sending…";
+    const headers = { "Content-Type": "application/json" };
+    if(isLive) headers["x-confirm"] = "PLACE-REAL-ORDER";
+    const r = await paytmFetch("/paytm/order/place", { method:"POST", headers, body: JSON.stringify(body) });
+    out.textContent = JSON.stringify(r, null, 2);
+  });
+
+  paytmRefreshStatus();
+  setInterval(paytmRefreshStatus, 15000);
+
   // ── Auto-run once per day: on open, show cached data instantly (no blank
   // screen/wait), then fetch fresh data automatically if today's data isn't
   // cached yet OR the person taps Refresh.
   const cache = loadCache();
   if(cache) showFromCache(cache);
+  if(cache && cache.nifty && cache.nifty.ok) latestIndexData.nifty = cache.nifty;
+  if(cache && cache.sensex && cache.sensex.ok) latestIndexData.sensex = cache.sensex;
   if(!cache || cache.dateKey !== todayKey()){
     fetchAll();
   }
@@ -841,11 +1285,16 @@
       const ts = result.timestamp || [];
       const quote = (result.indicators && result.indicators.quote && result.indicators.quote[0]) || {};
       const opens = quote.open || [], closes = quote.close || [];
+      // 🆕 High/Low — explicit user instruction (Sep 2026, Tamil): the
+      // கடைசி 7/3 நாட்கள் history needs a real Candle chart option, which
+      // needs High/Low per day too (previously only Open/Close were kept —
+      // enough for the text table, not enough for a candlestick).
+      const highs = quote.high || [], lows = quote.low || [];
       const days = [];
       for(let i=0;i<ts.length;i++){
         if(opens[i] == null || closes[i] == null) continue;
         const dt = new Date(ts[i]*1000);
-        days.push({ date: dt.toLocaleDateString("en-IN", { day:"2-digit", month:"short" }), open: opens[i], close: closes[i] });
+        days.push({ date: dt.toLocaleDateString("en-IN", { day:"2-digit", month:"short" }), open: opens[i], close: closes[i], high: (highs[i]==null?Math.max(opens[i],closes[i]):highs[i]), low: (lows[i]==null?Math.min(opens[i],closes[i]):lows[i]) });
       }
       if(!days.length) return { ok:false };
       return { ok:true, days };
@@ -980,7 +1429,426 @@
   function renderN50FormData(days){
     $("n50Hist7").innerHTML = renderHistRows(days.slice(-7));
     $("n50Hist3").innerHTML = renderHistRows(days.slice(-3));
+    renderN50Charts(days);
+    renderInvestmentPlan(days);
   }
+
+  // ── 🆕 கடைசி 7/3 நாட்கள் Candle/Line Chart — explicit user instruction
+  // (Sep 2026, Tamil): "லாஸ்ட் 7 டேஸ்-க்கும் கிராப் இம்ப்ளிமென்ட் பண்ணுங்க,
+  // ரெண்டு ஆப்ஷன் — கேண்டில், லைன்". Reuses renderPriceChartSVG (same
+  // renderer as the NIFTY/SENSEX popup above) — day objects here have
+  // open/close/high/low (Daily OHLC, not today's 5-min candles).
+  const LS_N50_CHART_MODE_KEY = "marketStatus_n50ChartMode_v1";
+  function loadN50ChartModes(){
+    try{ return JSON.parse(localStorage.getItem(LS_N50_CHART_MODE_KEY) || "{}"); }catch(e){ return {}; }
+  }
+  let n50ChartModes = Object.assign({ "7":"candle", "3":"candle" }, loadN50ChartModes());
+  function saveN50ChartModes(){ try{ localStorage.setItem(LS_N50_CHART_MODE_KEY, JSON.stringify(n50ChartModes)); }catch(e){} }
+
+  function dayToSeries(days){
+    return days.map(d => ({ o:d.open, h:(d.high!=null?d.high:Math.max(d.open,d.close)), l:(d.low!=null?d.low:Math.min(d.open,d.close)), c:d.close }));
+  }
+  // 🆕 Strike Rate — explicit user instruction (Sep 2026, Tamil): "ஏழு
+  // நாள்/மூணு நாள் Suggestion-க்கு, அந்த நாள் நடந்ததோ Success ரேட் Green,
+  // Unsuccess Red Percentage-ஆ காட்டணும்". Historical BACKTEST — for
+  // every day (except the very first, which has no prior day to base a
+  // Pivot on), computes what the Pivot Point method (see
+  // computePivotLevels below) WOULD have suggested using the PREVIOUS
+  // day's real High/Low/Close, then checks the ACTUAL next day's real
+  // Low/High: "Success" = that day's Low actually reached the S1 Buy-Zone
+  // AND its High actually reached the R1 Sell-Zone (both legs of the
+  // suggestion genuinely played out). This is a factual look-back at
+  // real past data — never a promise about tomorrow.
+  function backtestPivotSuccess(days){
+    let success = 0, total = 0;
+    for(let i=1;i<days.length;i++){
+      const prev = days[i-1], today = days[i];
+      const lv = computePivotLevels(prev);
+      if(!lv || today.low == null || today.high == null) continue;
+      total++;
+      if(today.low <= lv.S1 && today.high >= lv.R1) success++;
+    }
+    return { success, total, fail: total - success };
+  }
+  function renderStrikeRate(containerId, days){
+    const el = $(containerId);
+    if(!el) return;
+    const r = backtestPivotSuccess(days);
+    if(!r.total){ el.innerHTML = `<div class="stock-empty" style="padding:8px; font-size:11px;">Strike Rate கணக்கிட போதுமான நாட்கள் இல்ல.</div>`; return; }
+    const succPct = (r.success / r.total * 100).toFixed(0);
+    const failPct = (r.fail / r.total * 100).toFixed(0);
+    el.innerHTML = `<div class="strike-rate-row"><span class="up">✅ Success: ${r.success}/${r.total} (${succPct}%)</span><span class="down">❌ Unsuccess: ${r.fail}/${r.total} (${failPct}%)</span></div>`;
+  }
+  function renderN50Charts(days){
+    renderPriceChartSVG("n50Chart7", dayToSeries(days.slice(-7)), n50ChartModes["7"]);
+    renderStrikeRate("n50Strike7", days.slice(-7));
+    renderPriceChartSVG("n50Chart3", dayToSeries(days.slice(-3)), n50ChartModes["3"]);
+    renderStrikeRate("n50Strike3", days.slice(-3));
+  }
+  document.querySelectorAll(".chart-toggle-btn[data-n50chart]").forEach(btn => {
+    const period = btn.getAttribute("data-n50chart"), mode = btn.getAttribute("data-n50mode");
+    btn.addEventListener("click", () => {
+      n50ChartModes[period] = mode;
+      saveN50ChartModes();
+      document.querySelectorAll(`.chart-toggle-btn[data-n50chart="${period}"]`).forEach(b => b.classList.toggle("active", b.getAttribute("data-n50mode") === mode));
+      const cached = n50ActiveSym ? n50Hist[n50ActiveSym] : null;
+      if(cached && cached.days) renderN50Charts(cached.days);
+    });
+  });
+  function syncN50ChartToggleUI(){
+    document.querySelectorAll(".chart-toggle-btn[data-n50chart]").forEach(b => {
+      b.classList.toggle("active", b.getAttribute("data-n50mode") === n50ChartModes[b.getAttribute("data-n50chart")]);
+    });
+  }
+  syncN50ChartToggleUI();
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Investment Plan — Intraday Session Reference Levels. Explicit user
+  // instruction (Sep 2026, Tamil): "நிப்ட்டி 50 மெம்பருக்கு, ஒரு நாளை
+  // மூணா பிரிச்சு, இந்த டைம்ல இருந்து இந்த டைம் வரைக்கும் என்ன ரேட் வரும்
+  // போது வாங்கலாம், என்ன ரேட் வரைக்கும் வெயிட் பண்ணலாம், என்ன ரேட் வந்தா
+  // ஸ்டாப் லாஸ் பண்ணலாம்".
+  //
+  // ⚠️ HONEST LIMITATION (please read before trusting this feature):
+  // Nobody — no formula, no AI — can reliably predict which exact price a
+  // stock will hit at a specific time of day. Any tool that claims
+  // otherwise is guessing and presenting it as certainty. What THIS
+  // function does instead is 100% mechanical and fully explainable: it
+  // takes the real, already-fetched previous trading day's High/Low/Close
+  // and applies the classic "Pivot Point" method (textbook technical
+  // analysis, used by real traders for decades) —
+  //   Pivot (P)  = (High + Low + Close) / 3
+  //   Resistance 1 (R1) = 2P − Low        Support 1 (S1) = 2P − High
+  //   Resistance 2 (R2) = P + (High−Low)  Support 2 (S2) = P − (High−Low)
+  // — then labels S1/R1 as reference Buy-Zone/Sell-Zone levels, S2 as a
+  // reference Stop-Loss level, shown ONCE for the whole trading day
+  // (explicit user instruction, Sep 2026, Tamil: "மூணு ஸ்லாட் ரிமூவ்
+  // பண்ணிட்டு, மார்க்கெட் ஓபன்-ல் இருந்து க்ளோஸ் வரைக்கும் ஒரே ஸ்லாட்"
+  // — replaces the earlier 3-session repeat, which was honestly labelled
+  // as the SAME level shown 3 times, not 3 different computed targets;
+  // one slot for NSE's real full trading-day window (09:15–15:30) says
+  // the same thing without the misleading appearance of 3 separate
+  // analyses).
+  // ══════════════════════════════════════════════════════════════════
+  const INVEST_PLAN_SLOT = { label: "9:15 AM – 3:30 PM (Market Open — Close)" };
+  function computePivotLevels(day){
+    const H = day.high, L = day.low, C = day.close;
+    if(H == null || L == null || C == null) return null;
+    const P = (H + L + C) / 3;
+    const R1 = 2*P - L, S1 = 2*P - H;
+    const R2 = P + (H - L), S2 = P - (H - L);
+    return { P, R1, S1, R2, S2, basedOnDate: day.date };
+  }
+  function renderInvestmentPlan(days){
+    const el = $("n50InvestPlan");
+    if(!el) return;
+    const last = days[days.length - 1];
+    const levels = last ? computePivotLevels(last) : null;
+    if(!levels){ el.innerHTML = `<div class="stock-empty">Plan கணக்கிட High/Low/Close Data கிடைக்கல்.</div>`; return; }
+    el.innerHTML = `<div style="font-size:10.5px; color:var(--muted); margin-bottom:8px;">அடிப்படை: ${levels.basedOnDate}-ன் High/Low/Close (Pivot Point Method)</div>` +
+      `<div class="plan-session">
+        <div class="ptime">🕐 ${INVEST_PLAN_SLOT.label}</div>
+        <div class="prow"><span class="pl">🟢 Buy-Zone Reference (S1)</span><span class="pv nums up">${fmt(levels.S1)}</span></div>
+        <div class="prow"><span class="pl">🔴 Sell/Book-Profit Reference (R1)</span><span class="pv nums down">${fmt(levels.R1)}</span></div>
+        <div class="prow"><span class="pl">🛑 Stop-Loss Reference (S2)</span><span class="pv nums">${fmt(levels.S2)}</span></div>
+      </div>`;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Share — explicit user instruction (Sep 2026, Tamil): "பைசல் ஆர்டர்
+  // ஃபார்வேர்ட் பண்றதுக்கு ஒரு ஷேர் பட்டன், அதுல WhatsApp Normal +
+  // WhatsApp Business ரெண்டும் வரணும், டிஸ்க்ளைமரும் Text-ல் வரணும்,
+  // Image (JPG)-ஆவும் Share பண்ண முடியணும் — Logo-ஐ Light பண்ணி அதுல
+  // இந்த Details Design பண்ணி".
+  // ══════════════════════════════════════════════════════════════════
+  function currentShareContext(){
+    if(!n50ActiveSym) return null;
+    const cached = n50Hist[n50ActiveSym];
+    if(!cached || !cached.days || !cached.days.length) return null;
+    const last = cached.days[cached.days.length - 1];
+    const levels = computePivotLevels(last);
+    if(!levels) return null;
+    const stockRow = stockList.find(([s]) => s === n50ActiveSym);
+    const name = stockRow ? stockRow[1] : n50ActiveSym;
+    return { sym: n50ActiveSym, name, levels, strikes: computeMultiWindowStrikeRates(cached.days) };
+  }
+  // 🆕 Success Rate Snapshot — explicit user instruction (Sep 2026, Tamil):
+  // "ஷேர் பண்ணும்போது Last Day/3 Days/5 Days/10 Days Success Rate ஒரு
+  // Round Border Box-ல, Positive-ஆ Green, Negative-ஆ Red வரணும்". Each
+  // window reuses the SAME real historical backtestPivotSuccess already
+  // built — d1 needs the last 2 days (1 backtest pair), d3 the last 4
+  // days (3 pairs), etc. `total < n` (not enough history yet, e.g. a
+  // stock added only 2 days ago) returns pct:null, shown as "—", never a
+  // fabricated number.
+  function computeMultiWindowStrikeRates(days){
+    const mk = (n) => {
+      const r = backtestPivotSuccess(days.slice(-(n+1)));
+      return { success:r.success, total:r.total, fail:r.fail, pct: r.total ? (r.success/r.total*100) : null };
+    };
+    return { d1: mk(1), d3: mk(3), d5: mk(5), d10: mk(10) };
+  }
+  function buildShareText(ctx){
+    const dateStr = new Date().toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" });
+    // Plain WhatsApp text can't show real colored borders — 〔 〕 simulate
+    // the "round border box" look; ✅/🔴 stand in for Green/Red per box,
+    // exactly as requested (Positive ≥50% = Green/✅, Negative <50% = Red/🔴).
+    const box = (label, r) => {
+      if(r.pct === null) return `〔${label}: —〕`;
+      const tag = r.pct >= 50 ? "✅" : "🔴";
+      return `〔${label}: ${tag}${r.pct.toFixed(0)}%〕`;
+    };
+    const s = ctx.strikes;
+    const strikeLine = `${box("1D", s.d1)} ${box("3D", s.d3)} ${box("5D", s.d5)} ${box("10D", s.d10)}`;
+    return `📅 ${dateStr}\n` +
+      `📊 *${ctx.sym}* (${ctx.name})\n` +
+      `🕐 ${INVEST_PLAN_SLOT.label}\n` +
+      `அடிப்படை: ${ctx.levels.basedOnDate}-ன் High/Low/Close (Pivot Point Method)\n\n` +
+      `🟢 Buy-Zone Reference: ${fmt(ctx.levels.S1)}\n` +
+      `　　_இந்த ரேட்ல/அதற்கு கீழ வந்தா, Buy பண்ண Reference-ஆ பாக்கலாம்_\n` +
+      `🔴 Sell/Book-Profit Reference: ${fmt(ctx.levels.R1)}\n` +
+      `　　_இந்த ரேட்ல/அதற்கு மேல வந்தா, Profit Book பண்ண Reference-ஆ பாக்கலாம்_\n` +
+      `🛑 Stop-Loss Reference: ${fmt(ctx.levels.S2)}\n` +
+      `　　_இதற்கு கீழ போனா, Loss-ஐ Control பண்ண Stop-Loss Reference_\n\n` +
+      `📦 Success Rate Snapshot: ${strikeLine}\n` +
+      `　　_முந்தைய 1/3/5/10 நாட்களில் இந்த Method எத்தனை % Success ஆகி இருக்கு (Historical Backtest)_\n\n` +
+      `⚠️ இது Investment Advice/Guarantee இல்ல — Pivot Point எனும் ஒரு பொது Technical Analysis Method வெச்சு Mechanical-ஆ கணக்கிடப்பட்ட Reference மட்டும். சொந்த ஆராய்ச்சி + Risk Capacity வெச்சு தான் இறுதி முடிவு எடுக்கணும்.`;
+  }
+  // Android-only trick: an intent:// URL with an explicit `package=` targets
+  // ONE specific app directly (here: normal WhatsApp vs WhatsApp Business —
+  // both installed side-by-side use different package names) instead of
+  // Chrome/Android guessing or showing a generic app-chooser. Falls back to
+  // a plain wa.me link (works everywhere, but can't pick between the two)
+  // if this device/browser doesn't support intent:// at all (e.g. iOS).
+  function openWhatsAppVariant(pkg, text){
+    const encoded = encodeURIComponent(text);
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    if(isAndroid){
+      const intentUrl = `intent://send?text=${encoded}#Intent;scheme=whatsapp;package=${pkg};end`;
+      window.location.href = intentUrl;
+      // Best-effort fallback: if the target app isn't installed, Chrome
+      // silently does nothing (no error event to catch) — after a short
+      // pause, offer the generic link too so the person isn't stuck.
+      setTimeout(() => {
+        if(document.hidden) return; // it DID open something — tab lost focus
+        window.open(`https://wa.me/?text=${encoded}`, "_blank");
+      }, 1500);
+    } else {
+      window.open(`https://wa.me/?text=${encoded}`, "_blank");
+    }
+  }
+
+  let pendingShareText = "";
+  let pendingShareCtx = null; // non-null only for single-stock shares (Image button needs levels+sym)
+  function openShareSheet(){
+    const ctx = currentShareContext();
+    if(!ctx){ alert("Share பண்ண Data இன்னும் Fetch ஆகல் — கொஞ்சம் Wait பண்ணி மறுபடி முயற்சி பண்ணுங்க."); return; }
+    pendingShareText = buildShareText(ctx);
+    pendingShareCtx = ctx;
+    $("shareImageBtn").style.display = "block";
+    $("shareSheetSub").textContent = `${ctx.sym} — ${INVEST_PLAN_SLOT.label}`;
+    $("shareSheetBackdrop").style.display = "block";
+    $("shareSheet").style.display = "block";
+  }
+  // 🆕 Generic open — used by the 🏆 Top Performers per-tier 📤 Share
+  // buttons below (a group of stocks has no single "levels" to draw an
+  // Image card for, so that option is hidden for these — Text-share via
+  // either WhatsApp variant still works exactly the same way).
+  function openShareSheetWithText(subLabel, text){
+    pendingShareText = text;
+    pendingShareCtx = null;
+    $("shareImageBtn").style.display = "none";
+    $("shareSheetSub").textContent = subLabel;
+    $("shareSheetBackdrop").style.display = "block";
+    $("shareSheet").style.display = "block";
+  }
+  function closeShareSheet(){
+    $("shareSheetBackdrop").style.display = "none";
+    $("shareSheet").style.display = "none";
+  }
+  $("n50FormShareBtn").addEventListener("click", openShareSheet);
+  $("shareSheetBackdrop").addEventListener("click", closeShareSheet);
+  $("shareSheetCloseBtn").addEventListener("click", closeShareSheet);
+  $("shareWaNormalBtn").addEventListener("click", () => {
+    if(pendingShareText) openWhatsAppVariant("com.whatsapp", pendingShareText);
+    closeShareSheet();
+  });
+  $("shareWaBusinessBtn").addEventListener("click", () => {
+    if(pendingShareText) openWhatsAppVariant("com.whatsapp.w4b", pendingShareText);
+    closeShareSheet();
+  });
+
+  // 🆕 Shareable Image (JPG) card — explicit user instruction: "பியூர் ஒரு
+  // வைட் ஷீட் இல்லாம, லோகோவை Light பண்ணி அதுல Details வர மாதிரி Design
+  // பண்ணுங்க". Drawn on an offscreen <canvas>: the app's own 512px logo,
+  // lightened (drawn at low opacity over a dark background — matches the
+  // app's existing dark theme rather than a plain white sheet), with the
+  // stock's levels + disclaimer text laid over it. Shares as a real JPG
+  // file via the Web Share API when the device supports sharing files;
+  // otherwise falls back to a plain download (always works everywhere).
+  let cachedLogoImg = null;
+  function loadLogoImg(){
+    return new Promise((resolve) => {
+      if(cachedLogoImg){ resolve(cachedLogoImg); return; }
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => { cachedLogoImg = img; resolve(img); };
+      img.onerror = () => resolve(null);
+      img.src = "./market-status-icon-512-v3.png";
+    });
+  }
+  function wrapCanvasText(ctx, text, x, y, maxWidth, lineHeight){
+    const words = text.split(" ");
+    let line = "", yy = y;
+    for(const word of words){
+      const test = line ? line + " " + word : word;
+      if(ctx.measureText(test).width > maxWidth && line){
+        ctx.fillText(line, x, yy);
+        line = word; yy += lineHeight;
+      } else { line = test; }
+    }
+    if(line) ctx.fillText(line, x, yy);
+    return yy + lineHeight;
+  }
+  async function generateShareImage(ctx0){
+    // 🆕 "Invitation Card" style redesign — explicit user instruction (Sep
+    // 2026, Tamil): "ஷேர் பண்ணும்போது இமேஜ் ஒரு Invitation Card மாதிரி
+    // இருக்கணும், ஒவ்வொரு Detail-க்கும் ஒரு சின்ன குறிப்பு (caption)
+    // வரணும்" — added: a decorative double gold border frame (classic
+    // invitation-card framing), a thin divider under the header, and a
+    // short explanatory caption line under every value row + the Success
+    // Rate boxes. Design choices (exact frame style/spacing) left to me.
+    const W = 1080, H = 1650;
+    const canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    const c = canvas.getContext("2d");
+    // Background — same dark theme as the app itself.
+    c.fillStyle = "#0F1115"; c.fillRect(0, 0, W, H);
+    const grad = c.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, "#1D2128"); grad.addColorStop(1, "#0F1115");
+    c.fillStyle = grad; c.fillRect(0, 0, W, H);
+    // Lightened logo, large, centered, low-opacity — a watermark, not a
+    // plain white sheet, per explicit instruction.
+    const logo = await loadLogoImg();
+    if(logo){
+      c.save();
+      c.globalAlpha = 0.14;
+      const size = 760;
+      c.drawImage(logo, (W-size)/2, 260, size, size);
+      c.restore();
+    }
+    function roundRectPath(x, y, w, h, r){
+      c.beginPath();
+      c.moveTo(x+r, y);
+      c.arcTo(x+w, y, x+w, y+h, r);
+      c.arcTo(x+w, y+h, x, y+h, r);
+      c.arcTo(x, y+h, x, y, r);
+      c.arcTo(x, y, x+w, y, r);
+      c.closePath();
+    }
+    // 🆕 Invitation-card double border frame.
+    c.lineWidth = 3; c.strokeStyle = "#8A722A";
+    roundRectPath(24, 24, W-48, H-48, 22); c.stroke();
+    c.lineWidth = 1.5; c.strokeStyle = "#D4A72C";
+    roundRectPath(38, 38, W-76, H-76, 16); c.stroke();
+    // Header
+    c.fillStyle = "#D4A72C"; c.font = "700 46px sans-serif"; c.textAlign = "center";
+    c.fillText("📈 Market Status", W/2, 110);
+    c.fillStyle = "#8A8F98"; c.font = "400 26px sans-serif";
+    c.fillText("Nifty & Sensex", W/2, 155);
+    // Date at TOP — explicit user instruction (Sep 2026): "டேட்டும் வரணும்
+    // டாப்ல".
+    c.fillStyle = "#EDEEF0"; c.font = "700 26px sans-serif";
+    c.fillText(new Date().toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" }), W/2, 195);
+    // Divider
+    c.strokeStyle = "rgba(212,167,44,0.4)"; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(90, 220); c.lineTo(W-90, 220); c.stroke();
+    // Stock name/symbol
+    c.textAlign = "left";
+    c.fillStyle = "#EDEEF0"; c.font = "700 54px sans-serif";
+    c.fillText(ctx0.sym, 70, 295);
+    c.fillStyle = "#8A8F98"; c.font = "400 30px sans-serif";
+    c.fillText(ctx0.name, 70, 340);
+    // Session
+    c.fillStyle = "#D4A72C"; c.font = "700 32px sans-serif";
+    c.fillText("🕐 " + INVEST_PLAN_SLOT.label, 70, 410);
+    c.fillStyle = "#8A8F98"; c.font = "400 24px sans-serif";
+    c.fillText(`அடிப்படை: ${ctx0.levels.basedOnDate}-ன் High/Low/Close (Pivot Point Method)`, 70, 446);
+    // Level rows — each with a short caption explaining what it means.
+    const rows = [
+      { label: "🟢 Buy-Zone Reference", value: fmt(ctx0.levels.S1), color: "#2FBF71", caption: "இந்த ரேட்ல/அதற்கு கீழ வந்தா, Buy பண்ண Reference" },
+      { label: "🔴 Sell/Book-Profit Reference", value: fmt(ctx0.levels.R1), color: "#E5484D", caption: "இந்த ரேட்ல/அதற்கு மேல வந்தா, Profit Book பண்ண Reference" },
+      { label: "🛑 Stop-Loss Reference", value: fmt(ctx0.levels.S2), color: "#EDEEF0", caption: "இதற்கு கீழ போனா, Loss Control பண்ண Reference" }
+    ];
+    let ry = 540;
+    rows.forEach(r => {
+      c.fillStyle = "rgba(255,255,255,0.05)";
+      roundRectPath(60, ry-48, W-120, 96, 12);
+      c.fill();
+      c.fillStyle = "#EDEEF0"; c.font = "400 32px sans-serif"; c.textAlign = "left";
+      c.fillText(r.label, 90, ry);
+      c.fillStyle = r.color; c.font = "700 40px sans-serif"; c.textAlign = "right";
+      c.fillText(r.value, W-90, ry);
+      c.textAlign = "left";
+      c.fillStyle = "#8A8F98"; c.font = "italic 400 21px sans-serif";
+      c.fillText(r.caption, 90, ry + 38);
+      ry += 140;
+    });
+    // Success Rate Snapshot — 4 rounded boxes, Green (≥50%) / Red (<50%).
+    c.fillStyle = "#8A8F98"; c.font = "700 26px sans-serif"; c.textAlign = "left";
+    c.fillText("📦 Success Rate Snapshot", 70, ry + 6);
+    ry += 40;
+    const snapBoxes = [
+      { label: "1D", r: ctx0.strikes.d1 },
+      { label: "3D", r: ctx0.strikes.d3 },
+      { label: "5D", r: ctx0.strikes.d5 },
+      { label: "10D", r: ctx0.strikes.d10 }
+    ];
+    const bx0 = 70, bw = (W - 140 - 3*18) / 4, bh = 110, by = ry + 15;
+    snapBoxes.forEach((box, i) => {
+      const x = bx0 + i * (bw + 18);
+      const positive = box.r.pct !== null && box.r.pct >= 50;
+      const negative = box.r.pct !== null && box.r.pct < 50;
+      const color = positive ? "#2FBF71" : negative ? "#E5484D" : "#8A8F98";
+      c.lineWidth = 4; c.strokeStyle = color;
+      roundRectPath(x, by, bw, bh, 16);
+      c.stroke();
+      c.fillStyle = "#8A8F98"; c.font = "400 24px sans-serif"; c.textAlign = "center";
+      c.fillText(box.label, x + bw/2, by + 38);
+      c.fillStyle = color; c.font = "700 34px sans-serif";
+      c.fillText(box.r.pct === null ? "—" : `${box.r.pct.toFixed(0)}%`, x + bw/2, by + 82);
+    });
+    c.textAlign = "left";
+    ry = by + bh + 34;
+    c.fillStyle = "#8A8F98"; c.font = "italic 400 21px sans-serif";
+    ry = wrapCanvasText(c, "முந்தைய 1/3/5/10 நாட்களில் இந்த Method எத்தனை % Success ஆகி இருக்கு (Historical Backtest)", 70, ry, W-140, 27);
+    // Disclaimer
+    ry += 20;
+    c.fillStyle = "#F3AEB2"; c.font = "400 22px sans-serif";
+    const disclaimer = "⚠️ இது Investment Advice/Guarantee இல்ல — Pivot Point எனும் ஒரு பொது Technical Analysis Method வெச்சு Mechanical-ஆ கணக்கிடப்பட்ட Reference மட்டும். சொந்த ஆராய்ச்சி + Risk Capacity வெச்சு தான் இறுதி முடிவு எடுக்கணும்.";
+    wrapCanvasText(c, disclaimer, 70, ry, W-140, 32);
+    // Footer
+    c.fillStyle = "#8A8F98"; c.font = "400 20px sans-serif"; c.textAlign = "center";
+    c.fillText("Market Status App", W/2, H-56);
+    return new Promise(resolve => canvas.toBlob(blob => resolve(blob), "image/jpeg", 0.92));
+  }
+  $("shareImageBtn").addEventListener("click", async () => {
+    const ctx = pendingShareCtx;
+    if(!ctx){ alert("Share பண்ண Data இன்னும் Fetch ஆகல்."); return; }
+    closeShareSheet();
+    const blob = await generateShareImage(ctx);
+    if(!blob){ alert("Image உருவாக்குறதுல Error."); return; }
+    const fileName = `${ctx.sym}_MarketStatus_${todayKey()}.jpg`;
+    const file = new File([blob], fileName, { type: "image/jpeg" });
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      try{ await navigator.share({ files: [file], title: ctx.sym, text: buildShareText(ctx) }); return; }catch(e){ /* fall through to download */ }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = fileName;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  });
+
 
   // Shared fetch+cache step (no form-view DOM touched) — used by both the
   // single-stock form (fetchAndRenderN50) and the bulk auto-fetch-all below.
@@ -1008,6 +1876,51 @@
     }
   }
 
+  // 🆕 Auto-refresh every 15 minutes — explicit user instruction (Sep 2026,
+  // Tamil, 2nd correction): "50 Stock-உம் தட்டி Open பண்ணனுமா, தானாகவே
+  // 50-உம் Reflect ஆகணும்" — the previous version only auto-refreshed
+  // stocks you'd already opened at least once (so they existed in
+  // n50Hist). Now covers ALL 50 stockList members from the very start —
+  // no tap/open needed on any of them first. Runs once immediately on
+  // page load (so the data exists right away, not after waiting 15
+  // minutes for the first tick) AND every 15 minutes after that, 6-at-a-
+  // time (same gentle pattern fetchAllN50History already uses so Yahoo/
+  // the proxy isn't hammered with 50 simultaneous requests).
+  // ⚠️ Honest limitation: this is a plain JS timer in a browser tab, not a
+  // native background service — if the phone fully closes this tab, or
+  // the screen stays off long enough for Chrome/Android to suspend it,
+  // this timer pauses too and resumes the next time the app is opened
+  // (there's no way for a plain web page to keep truly running with the
+  // screen off/app closed — that would need native background sync,
+  // which this single-file app doesn't have). Also: this now fetches all
+  // 50 stocks' daily history in the background every 15 min regardless
+  // of whether you ever open "Nifty 50 Entry" — meaningfully more data
+  // usage than before, since it no longer waits for you to open anything.
+  const N50_AUTO_REFRESH_MS = 15 * 60 * 1000;
+  let n50AutoRefreshRunning = false;
+  async function autoRefreshAllN50(){
+    if(n50AutoRefreshRunning) return;
+    n50AutoRefreshRunning = true;
+    try{
+      await fetchInChunks(stockList, async ([sym]) => {
+        await fetchAndCacheN50(sym);
+      }, 6);
+      // Repaint whichever screen is currently visible with the fresh data.
+      if(n50ActiveSym && $("n50FormView").style.display !== "none" && n50Hist[n50ActiveSym]){
+        renderN50FormData(n50Hist[n50ActiveSym].days);
+        $("n50FormStatus").textContent = "Last Update: " + n50Hist[n50ActiveSym].time + " (Automatic — 15min Background Refresh)";
+      }
+      if($("n50ListView").style.display !== "none"){
+        renderN50List($("n50Search").value);
+        renderTopPerformers();
+      }
+    } finally {
+      n50AutoRefreshRunning = false;
+    }
+  }
+  autoRefreshAllN50(); // once immediately on load — all 50, no tap needed
+  setInterval(autoRefreshAllN50, N50_AUTO_REFRESH_MS);
+
   // ── Auto-fetch ALL 50 stocks' history the moment the Nifty 50 Entry list
   // is opened — no more tapping into each stock one by one. Skips symbols
   // already cached for today; runs 6-at-a-time (same pattern as the main
@@ -1034,9 +1947,89 @@
       done++;
       $("n50ListStatus").innerHTML = `<span class="loading-dot"></span>${total} Stocks Auto Fetch ஆகுது… (${done}/${total})`;
       renderN50List($("n50Search").value); // progressively flip tags to ✓ Fetched
+      renderTopPerformers();
     }, 6);
     $("n50ListStatus").textContent = "";
     n50BulkRunning = false;
+    renderTopPerformers();
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Top Performers (Top 10 / Top 5 / Top 3) — explicit user instruction
+  // (Sep 2026, Tamil): "மோஸ்ட் நிப்ட்டி 50-ல் மோஸ்ட் டென், மோஸ்ட் ஃபைவ்,
+  // மோஸ்ட் த்ரீ வரணும் ... இது ஸ்டாடிஸ்டிக்ஸ் அடிப்படையில் பெஸ்ட்டா
+  // இருக்கணும், சும்மா ஏனோதானா கொடுக்க கூடாது". Ranking is 100%
+  // data-driven — the SAME historical Pivot-Point backtest already built
+  // for the single-stock page (backtestPivotSuccess) run for EVERY cached
+  // stock, sorted by real Success %, highest first. A stock needs at
+  // least 3 backtestable days to qualify (avoids a stock with only 1-2
+  // days showing a meaningless 100%/0%). Design choices below (which
+  // emoji/flash speed per tier, where this panel sits) were left to me —
+  // 🔥 fast-flash for Top 3, ⭐ slower-flash for Top 5, ✨ static for Top
+  // 10, simply as a visual hierarchy (top 3 catches the eye fastest).
+  // ══════════════════════════════════════════════════════════════════
+  function computeAllStockBacktests(){
+    const out = [];
+    stockList.forEach(([sym, name]) => {
+      const cached = n50Hist[sym];
+      if(!cached || !cached.days || cached.days.length < 4) return; // need >=4 days for >=3 backtestable pairs
+      const r = backtestPivotSuccess(cached.days);
+      if(r.total < 3) return;
+      out.push({ sym, name, success: r.success, total: r.total, fail: r.fail, pct: r.success / r.total * 100 });
+    });
+    out.sort((a,b) => b.pct - a.pct || b.total - a.total);
+    return out;
+  }
+  function groupStrikeRate(list){
+    let success = 0, total = 0;
+    list.forEach(s => { success += s.success; total += s.total; });
+    return { success, total, fail: total - success, pct: total ? (success/total*100) : null };
+  }
+  function renderTopTier(tierKey, tierTitle, badgeHtml, list, groupRate){
+    const rateText = groupRate.pct === null ? "—" : `✅ ${groupRate.success}/${groupRate.total} (${groupRate.pct.toFixed(0)}%) Success`;
+    const itemsHtml = list.map(s => `
+      <div class="top-item" data-sym="${s.sym}">
+        <span class="tname">${badgeHtml}<span class="sym">${s.sym}</span><span class="cname">${s.name}</span></span>
+        <span class="tstrike ${s.pct>=50?"up":"down"}">${s.pct.toFixed(0)}% (${s.success}/${s.total})</span>
+      </div>`).join("");
+    return `<div class="top-tier" data-tier="${tierKey}">
+      <div class="top-tier-head">
+        <span class="ttitle">${tierTitle}</span>
+        <span class="top-tier-share" data-tier-share="${tierKey}">📤 Share</span>
+      </div>
+      <div class="top-group-strike">📊 Daily Strike Rate (Group Combined): ${rateText}</div>
+      ${itemsHtml || `<div class="stock-empty">போதுமான Backtest Data இல்ல.</div>`}
+    </div>`;
+  }
+  function buildTierShareText(tierTitle, list, groupRate){
+    const dateStr = new Date().toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" });
+    const rateText = groupRate.pct === null ? "—" : `${groupRate.success}/${groupRate.total} (${groupRate.pct.toFixed(0)}%)`;
+    const lines = list.map((s,i) => `${i+1}. *${s.sym}* (${s.name}) — ${s.pct.toFixed(0)}% (${s.success}/${s.total})`).join("\n");
+    return `📅 ${dateStr}\n🏆 *${tierTitle}* — Nifty 50 (Historical Pivot Backtest)\n\n${lines}\n\n📊 Group Combined Strike Rate: ${rateText}\n\n⚠️ இது ஒரு Historical Backtest Ranking மட்டும், Investment Advice/Guarantee இல்ல. சொந்த ஆராய்ச்சி + Risk Capacity வெச்சு தான் இறுதி முடிவு எடுக்கணும்.`;
+  }
+  function renderTopPerformers(){
+    const el = $("topPerformersBody");
+    if(!el) return;
+    const all = computeAllStockBacktests();
+    if(!all.length){ el.innerHTML = `<div class="stock-empty">போதுமான Backtest Data இல்ல — Nifty 50 Entry-ஐ திறந்து கொஞ்ச நேரம் Wait பண்ணுங்க (Auto Fetch ஆகும்).</div>`; return; }
+    const top10 = all.slice(0, 10), top5 = all.slice(0, 5), top3 = all.slice(0, 3), top1 = all.slice(0, 1);
+    el.innerHTML =
+      renderTopTier("10", "✨ Top 10", `<span class="top-badge">✨</span>`, top10, groupStrikeRate(top10)) +
+      renderTopTier("5", "⭐ Top 5", `<span class="top-badge flash-slow">⭐</span>`, top5, groupStrikeRate(top5)) +
+      renderTopTier("3", "🔥 Top 3", `<span class="top-badge flash-fast">🔥</span>`, top3, groupStrikeRate(top3)) +
+      renderTopTier("1", "🥇 Best 1", `<span class="top-badge flash-fast">🥇</span>`, top1, groupStrikeRate(top1));
+    el.querySelectorAll(".top-item[data-sym]").forEach(row => {
+      row.addEventListener("click", () => openN50Form(row.getAttribute("data-sym")));
+    });
+    el.querySelectorAll("[data-tier-share]").forEach(btn => {
+      btn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const tier = btn.getAttribute("data-tier-share");
+        const list = tier === "10" ? top10 : tier === "5" ? top5 : tier === "3" ? top3 : top1;
+        const title = tier === "10" ? "✨ Top 10" : tier === "5" ? "⭐ Top 5" : tier === "3" ? "🔥 Top 3" : "🥇 Best 1";
+        openShareSheetWithText(`${title} — Nifty 50`, buildTierShareText(title, list, groupStrikeRate(list)));
+      });
+    });
   }
 
   function renderN50List(filterText){
@@ -1061,6 +2054,7 @@
 
   function openN50List(){
     renderN50List($("n50Search").value);
+    renderTopPerformers();
     $("n50ListView").style.display = "flex";
     fetchAllN50History(); // auto-fetch every stock not already cached today, no tap needed
   }
