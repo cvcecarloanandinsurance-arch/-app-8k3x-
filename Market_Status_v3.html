@@ -277,6 +277,10 @@
     <div class="paytm-grid">
       <div class="btn gold" id="uploadTodayNewsBtn">📤 Upload Today's News (PDF)</div>
       <div class="btn gold" id="downloadConsolidatedNewsBtn">📥 Download Consolidated News</div>
+      <div class="btn" id="viewTodayNewsBtn">👁️ View Today's News</div>
+      <div class="btn" id="viewConsolidatedNewsBtn">👁️ View Consolidated News</div>
+      <div class="btn" id="editConsolidatedNewsBtn">✏️ Edit Pages</div>
+      <div class="btn" id="restoreConsolidatedNewsBtn">♻️ Restore Backup</div>
     </div>
     <div id="newsStatusLine" style="font-size:11px; color:var(--muted); margin-top:10px;"></div>
   </div>
@@ -376,6 +380,22 @@
   </div>
   <div id="chartModalSvgWrap"></div>
   <div class="chart-legend" id="chartModalLegend"></div>
+</div>
+
+<!-- ── Consolidated News PDF: Edit Pages (Remove / Reorder) ── -->
+<div class="fs-view" id="newsEditView">
+  <div class="fs-header">
+    <span class="back" id="newsEditBack">←</span>
+    <h2>✏️ Consolidated News — Pages Edit</h2>
+  </div>
+  <div class="fs-body">
+    <div style="font-size:11px; color:var(--muted); margin-bottom:10px;">⚠️ இது Page Number-ஐ மட்டும் காட்டும் (Thumbnail Image இல்ல). Remove பண்ண Page-ஐ 🗑️ தட்டுங்க, Order மாத்த ⬆️⬇️ Use பண்ணுங்க. கடைசில "Save Changes" தட்டினா தான் Consolidated PDF-ல Permanent-ஆ Apply ஆகும் — அதுவரைக்கும் இது இந்த Screen-லேயே தான் இருக்கும். Mistake ஆனா "Restore Backup" Button-ஐ (முந்தைய Screen-ல) Use பண்ணி Save பண்றதுக்கு முந்தைய Version-க்கு திரும்பலாம்.</div>
+    <div id="newsEditPagesBody"></div>
+    <div style="display:flex; gap:8px; margin-top:14px;">
+      <div class="btn" id="newsEditCancelBtn" style="flex:1; text-align:center;">Cancel</div>
+      <div class="btn gold" id="newsEditSaveBtn" style="flex:1; text-align:center;">💾 Save Changes</div>
+    </div>
+  </div>
 </div>
 
 <!-- ── Nifty 50 Manual Entry: List view (50 members) ── -->
@@ -664,6 +684,7 @@
         const arrayBuffer = await file.arrayBuffer();
         const todayDoc = await PDFDocument.load(arrayBuffer);
         const existingConsolidated = await idbGet("consolidated");
+        if(existingConsolidated) await idbSet("consolidated_backup", existingConsolidated); // 🆕 backup the PRE-merge version, so "Restore Backup" can undo this merge too, not just Edit-Pages
         const consolidatedDoc = existingConsolidated ? await PDFDocument.load(existingConsolidated) : await PDFDocument.create();
         const copiedPages = await consolidatedDoc.copyPages(todayDoc, todayDoc.getPageIndices());
         copiedPages.forEach(p => consolidatedDoc.addPage(p));
@@ -690,6 +711,137 @@
       downloadPdfBytes(consolidated, `Consolidated_Nifty50_News_${todayDateStrForNews()}.pdf`);
     });
   }
+
+  // 🆕 View (Read) buttons — explicit user instruction (Sep 2026, Tamil):
+  // "அப்லோடு செய்த டாக்குமென்ட்களை Read செய்ய View Button தேவை
+  // இரண்டிற்கும்" — opens the PDF directly in a new browser tab (via a
+  // Blob URL, same phone-only storage as everything else here — nothing
+  // uploaded to any server) instead of only being able to Download it.
+  function viewPdfBytes(bytes, statusElOnMissing, missingMessage){
+    if(!bytes){
+      if(statusElOnMissing) statusElOnMissing.textContent = missingMessage;
+      return;
+    }
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 60 * 1000); // give the new tab a full minute to finish loading the PDF before freeing it
+  }
+  const viewTodayNewsBtnEl = document.getElementById("viewTodayNewsBtn");
+  if(viewTodayNewsBtnEl){
+    viewTodayNewsBtnEl.addEventListener("click", async () => {
+      const statusEl = document.getElementById("newsStatusLine");
+      const todayBytes = await idbGet(`today_${todayDateStrForNews()}`);
+      viewPdfBytes(todayBytes, statusEl, "இன்னைக்கு இன்னும் எந்த News PDF-உம் Upload பண்ணல் — முதல் Upload பண்ணுங்க.");
+    });
+  }
+  const viewConsolidatedNewsBtnEl = document.getElementById("viewConsolidatedNewsBtn");
+  if(viewConsolidatedNewsBtnEl){
+    viewConsolidatedNewsBtnEl.addEventListener("click", async () => {
+      const statusEl = document.getElementById("newsStatusLine");
+      const consolidated = await idbGet("consolidated");
+      viewPdfBytes(consolidated, statusEl, "இன்னும் Consolidated PDF இல்ல — முதல் Today's News Upload பண்ணுங்க.");
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Edit Pages (Remove / Reorder) + Restore Backup — explicit user
+  // instruction (Sep 2026, Tamil): "Consolidated PDF-ல Pages Remove/
+  // Reorder பண்ண, Mistake ஆனா Restore பண்ண Edit/Save/Restore Button
+  // தேவை". Page thumbnails are NOT rendered (pdf-lib alone can't render
+  // page images — that needs pdf.js, not loaded here) — pages are shown
+  // by number only, honestly labeled as such in the screen itself.
+  // "Restore Backup" covers BOTH an accidental Edit-Save AND an
+  // accidental Upload-Merge — see the backup write added just above
+  // (right before the merge overwrites "consolidated"), and the one
+  // added in newsEditSaveBtn below (right before an edit overwrites it).
+  // Only ONE backup slot is kept (the state just before the last
+  // overwrite) — not a full multi-step undo history.
+  // ══════════════════════════════════════════════════════════════════
+  let newsEditPageOrder = null; // array of original page indices, in the CURRENT (possibly reordered/reduced) arrangement — null until Edit is opened
+  function renderNewsEditPagesBody(){
+    const el = document.getElementById("newsEditPagesBody");
+    if(!el) return;
+    if(!newsEditPageOrder || !newsEditPageOrder.length){
+      el.innerHTML = `<div class="stock-empty">Pages இல்ல.</div>`;
+      return;
+    }
+    el.innerHTML = newsEditPageOrder.map((origIdx, pos) => `
+      <div style="display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px;">
+        <span style="flex:1; font-size:13px;">📄 Page ${pos + 1} <span style="color:var(--muted); font-size:11px;">(Original Page ${origIdx + 1})</span></span>
+        <span class="btn" data-news-edit-up="${pos}" style="padding:4px 10px; font-size:13px;">⬆️</span>
+        <span class="btn" data-news-edit-down="${pos}" style="padding:4px 10px; font-size:13px;">⬇️</span>
+        <span class="btn" data-news-edit-remove="${pos}" style="padding:4px 10px; font-size:13px;">🗑️</span>
+      </div>
+    `).join("");
+    el.querySelectorAll("[data-news-edit-up]").forEach(btn => btn.addEventListener("click", () => {
+      const i = parseInt(btn.getAttribute("data-news-edit-up"), 10);
+      if(i <= 0) return;
+      [newsEditPageOrder[i-1], newsEditPageOrder[i]] = [newsEditPageOrder[i], newsEditPageOrder[i-1]];
+      renderNewsEditPagesBody();
+    }));
+    el.querySelectorAll("[data-news-edit-down]").forEach(btn => btn.addEventListener("click", () => {
+      const i = parseInt(btn.getAttribute("data-news-edit-down"), 10);
+      if(i >= newsEditPageOrder.length - 1) return;
+      [newsEditPageOrder[i+1], newsEditPageOrder[i]] = [newsEditPageOrder[i], newsEditPageOrder[i+1]];
+      renderNewsEditPagesBody();
+    }));
+    el.querySelectorAll("[data-news-edit-remove]").forEach(btn => btn.addEventListener("click", () => {
+      const i = parseInt(btn.getAttribute("data-news-edit-remove"), 10);
+      newsEditPageOrder.splice(i, 1);
+      renderNewsEditPagesBody();
+    }));
+  }
+  const editConsolidatedNewsBtnEl = document.getElementById("editConsolidatedNewsBtn");
+  if(editConsolidatedNewsBtnEl){
+    editConsolidatedNewsBtnEl.addEventListener("click", async () => {
+      const statusEl = document.getElementById("newsStatusLine");
+      const { PDFDocument } = window.PDFLib || {};
+      if(!PDFDocument){ if(statusEl) statusEl.textContent = "PDF Library Load ஆகல் — Internet Connection Check பண்ணுங்க."; return; }
+      const consolidated = await idbGet("consolidated");
+      if(!consolidated){ if(statusEl) statusEl.textContent = "இன்னும் Consolidated PDF இல்ல — முதல் Today's News Upload பண்ணுங்க."; return; }
+      const doc = await PDFDocument.load(consolidated);
+      newsEditPageOrder = doc.getPageIndices(); // start as [0,1,2,...N-1] — the current order, nothing removed yet
+      renderNewsEditPagesBody();
+      $("newsEditView").style.display = "flex";
+    });
+  }
+  document.getElementById("newsEditBack").addEventListener("click", () => { $("newsEditView").style.display = "none"; });
+  document.getElementById("newsEditCancelBtn").addEventListener("click", () => { $("newsEditView").style.display = "none"; });
+  document.getElementById("newsEditSaveBtn").addEventListener("click", async () => {
+    const statusEl = document.getElementById("newsStatusLine");
+    if(!newsEditPageOrder){ $("newsEditView").style.display = "none"; return; }
+    try{
+      const { PDFDocument } = window.PDFLib || {};
+      const consolidated = await idbGet("consolidated");
+      if(!consolidated) throw new Error("Consolidated PDF கிடைக்கல்.");
+      if(!newsEditPageOrder.length) throw new Error("குறைந்தது ஒரு Page-ஆவது இருக்கணும் — எல்லா Pages-யும் Remove பண்ண முடியாது.");
+      await idbSet("consolidated_backup", consolidated); // 🆕 backup the PRE-edit version, so a bad Edit-Save can be undone with "Restore Backup"
+      const originalDoc = await PDFDocument.load(consolidated);
+      const newDoc = await PDFDocument.create();
+      const copiedPages = await newDoc.copyPages(originalDoc, newsEditPageOrder);
+      copiedPages.forEach(p => newDoc.addPage(p));
+      const newBytes = await newDoc.save();
+      await idbSet("consolidated", newBytes);
+      $("newsEditView").style.display = "none";
+      await refreshNewsStatusLine();
+      if(statusEl) statusEl.textContent = `✅ Pages Edit Save ஆயிடுச்சு — இப்போ ${newDoc.getPageCount()} Pages. (Mistake-னா "Restore Backup" Use பண்ணுங்க.)`;
+    }catch(err){
+      if(statusEl) statusEl.textContent = "❌ Save Fail ஆச்சு: " + (err && err.message);
+    }
+  });
+  const restoreConsolidatedNewsBtnEl = document.getElementById("restoreConsolidatedNewsBtn");
+  if(restoreConsolidatedNewsBtnEl){
+    restoreConsolidatedNewsBtnEl.addEventListener("click", async () => {
+      const statusEl = document.getElementById("newsStatusLine");
+      const backup = await idbGet("consolidated_backup");
+      if(!backup){ if(statusEl) statusEl.textContent = "Restore பண்ண Backup இல்ல — இன்னும் ஒரு Edit/Merge கூட Save ஆகல்."; return; }
+      await idbSet("consolidated", backup);
+      await refreshNewsStatusLine();
+      if(statusEl) statusEl.textContent = "✅ Backup-ல் இருந்து Restore ஆயிடுச்சு — முந்தைய Edit/Merge Undo ஆயிடுச்சு.";
+    });
+  }
+
   refreshNewsStatusLine();
 
   // ── Default Nifty 50 constituents (as of Sep 2026, sourced from NSE-tracking
