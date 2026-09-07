@@ -310,6 +310,9 @@
         <div class="btn" id="paytmOrdersBtn">Order Book</div>
       </div>
       <div class="paytm-grid" style="margin-top:8px;">
+        <div class="btn" id="paytmSecMasterBtn" style="border-color:var(--muted); color:var(--muted);">🔧 Security Master CSV (Debug)</div>
+      </div>
+      <div class="paytm-grid" style="margin-top:8px;">
         <div class="btn gold" id="paytmOrderBookFormattedBtn">📋 Order Book (Live Status + Cancel)</div>
         <div class="btn gold" id="paytmPnlBtn">📊 Consolidated P&amp;L (எல்லா Companies)</div>
         <div class="btn gold" id="paytmFundsFormattedBtn">💰 My Funds</div>
@@ -412,11 +415,6 @@
       <div id="allStocksGraphBody"></div>
       <div id="allStocksStrikeRateBody"></div>
     </div>
-    <div class="n50-group" id="topPerformersPanel">
-      <div class="glabel">🏆 Top Performers — Historical Strike Rate அடிப்படையில் (Pivot Backtest)</div>
-      <div class="plan-disclaimer">⚠️ இது ஒரு Ranking மட்டும் — ஒவ்வொரு Stock-ஓட கடந்த நாட்களில் Pivot Point Suggestion எத்தனை தடவை Success ஆச்சுன்னு (Historical Backtest) வெச்சு தான் இந்த Order தீர்மானிக்கப்படுது. Future Guarantee இல்ல, குறைந்தது 3 நாள் Backtestable Data இருக்குற Stocks மட்டும் Rank ஆகும்.</div>
-      <div id="topPerformersBody"><div class="stock-empty">Nifty 50 Entry Data Fetch ஆகும்போது இங்க தெரியும்…</div></div>
-    </div>
     <input type="text" class="n50-search" id="n50Search" placeholder="Symbol / Name Search பண்ணுங்க…">
     <div class="n50-status" id="n50ListStatus"></div>
     <div id="n50ListBody"></div>
@@ -481,6 +479,17 @@
       <div id="n50Chart3"></div>
       <div id="n50Strike3"></div>
       <div id="n50Hist3"></div>
+    </div>
+
+    <!-- 🆕 Status-Only Indicators (Static, No Scroll) — explicit user
+         instruction (Sep 2026, Tamil): "ATR/ORB/Rolling-ஓட Suggestion,
+         Constant-ஆ Top-ல் நிக்கணும், Running/Scroll ஆகக்கூடாது". These 3
+         give Bias/Status only (Bullish/Bearish/Neutral, Survived/Not) —
+         deliberately kept OUT of the 5-indicator Profit/Loss magnitude
+         system, shown here as their own plain, static block. -->
+    <div class="n50-group" id="statusIndicatorsPanel">
+      <div class="glabel">📌 Status Indicators (Bias Only — Profit/Loss %-உடன் சம்பந்தம் இல்ல)</div>
+      <div id="statusIndicatorsBody" style="font-size:12px; line-height:1.9;"></div>
     </div>
 
     <div class="n50-group">
@@ -935,44 +944,67 @@
       if(todayBar.close == null) return;
       const symHist = intradayHistory[sym] || (intradayHistory[sym] = {});
       const arr = symHist[todayStr] || (symHist[todayStr] = []);
-      // 🆕 Explicit user instruction (Sep 2026, Tamil): "ஸ்ட்ரைக் ரேட் என்றது
-      // நீங்க கொடுத்த 15-min Suggestion-க்கு, அந்த Rate-ல எவ்ளோ Profit/Loss
-      // வந்தது அப்படின்றது தான்" — % = (Actual Rate − அதே Tick-ஓட Time-
-      // Aligned Suggestion S1) / S1 × 100. Falls back to the (older,
-      // less precise) 6-full-day+today-partial Suggestion only until 7
-      // days of persistent intraday history have accumulated.
+
+      // ══════════════════════════════════════════════════════════════
+      // 🆕 REDESIGNED per explicit user instruction (Sep 2026, Tamil):
+      // "A = 15-min Window Start-ல் Buy Rate Suggestion. B = அதே Window
+      // முடியும் Last Second-ல் (அடுத்த Tick வரும்போது) Actual Market
+      // Price. % = (B−A)/A×100." — this is a genuine forward-looking
+      // check (did the suggestion play out over the NEXT 15 minutes),
+      // not the old same-instant comparison. Because the app only polls
+      // every 15 min, "B" concretely means "whatever price the NEXT
+      // tick observes" — so a tick's own outcome can only be finalized
+      // retroactively, once that next tick arrives (see below).
+      //
+      // 5 Magnitude Indicators (each gets its own A, hence its own %):
+      // Pivot, SuperTrend, Bollinger, VWAP, and a 5th "Average" whose
+      // own A is the mean of the other 4 A's (NOT an average of already-
+      // computed %'s — confirmed explicitly).
+      // ══════════════════════════════════════════════════════════════
       const lv = computeTimeAlignedWeeklyPivotLevels(sym, hhmm) || computeLiveWeeklyPivotLevels(sym);
-      const pct = lv ? ((todayBar.close - lv.S1) / lv.S1 * 100) : null;
-      // 🆕 Every-15-min % for the other 4 Indicators too — explicit user
-      // instruction (Sep 2026, Tamil): "Every 15-min Strike Rate எல்லா
-      // Indicator-க்கும் வேணும்". Each % = (Current Rate − that
-      // Indicator's own Reference Level at this exact tick) / Reference
-      // × 100 — same formula pattern as Pivot's S1 above, just a
-      // different reference per indicator. ATR Stop-Loss deliberately
-      // excluded (not a directional target — see disclaimer elsewhere).
+      const pivotA = lv ? lv.S1 : null;
       const st = computeSuperTrend(cached.days, 10, 3);
-      const stPct = st ? ((todayBar.close - st.value) / st.value * 100) : null;
+      const stA = st ? st.value : null;
       const bb = computeBollingerBands(cached.days, 20, 2);
-      const bbPct = bb ? ((todayBar.close - bb.middle) / bb.middle * 100) : null;
-      const vwapNow = cached.vwap;
-      const vwapPct = (vwapNow != null) ? ((todayBar.close - vwapNow) / vwapNow * 100) : null;
+      const bbA = bb ? bb.middle : null;
+      const vwapA = (cached.vwap != null) ? cached.vwap : null;
+      const validAs = [pivotA, stA, bbA, vwapA].filter(v => v != null);
+      const avgA = validAs.length ? (validAs.reduce((a,b) => a+b, 0) / validAs.length) : null;
+
+      // 3 Separate Status-Only Indicators — explicit user instruction:
+      // "இவை Suggestion/Bias மட்டும் சொல்லும், Exact Profit Number
+      // சொல்லாது" — kept OUT of the 5-indicator Profit/Loss magnitude
+      // system entirely; shown as their own static, always-visible
+      // status (not scrolling), separately, per stock.
       const orbNow = computeORB(sym);
       const orbStatus = orbNow ? (orbNow.current > orbNow.high ? "UP" : (orbNow.current < orbNow.low ? "DOWN" : "NEUTRAL")) : null;
       const rollingNow = computeRollingRangeBreakout(sym);
       const rollingStatus = rollingNow ? (rollingNow.current > rollingNow.high ? "UP" : (rollingNow.current < rollingNow.low ? "DOWN" : "NEUTRAL")) : null;
-      // 🆕 ATR Stop-Loss — per-tick "Survival" check (corrected — this
-      // DOES have a meaningful 15-min reading, just not a directional %
-      // like the others). The Stop-Loss level itself is fixed for the
-      // whole day (computed from YESTERDAY's confirmed Close + ATR, same
-      // basis as the Daily backtest) — at each tick, Success = today's
-      // live rate is still ABOVE that level (Stop not yet breached).
       let atrOk = null;
       if(cached.days.length >= 2){
         const prevDayBar = cached.days[cached.days.length - 2];
         const atrSLNow = computeATRStopLoss(cached.days.slice(0, -1), prevDayBar.close, 14, 1.5);
         if(atrSLNow) atrOk = todayBar.close > atrSLNow.stopLoss;
       }
-      arr.push({ hhmm, time: timeLabel, price: todayBar.close, pct, stPct, bbPct, vwapPct, orbStatus, rollingStatus, atrOk });
+
+      // 🆕 Retroactively finalize the PREVIOUS tick's outcome — THIS
+      // tick's price is that previous tick's "B". A tick's own % stays
+      // null ("pending") until the tick after it arrives.
+      if(arr.length){
+        const prev = arr[arr.length - 1];
+        const B = todayBar.close;
+        prev.pivotPct = (prev.pivotA != null) ? ((B - prev.pivotA) / prev.pivotA * 100) : null;
+        prev.stPct    = (prev.stA    != null) ? ((B - prev.stA)    / prev.stA    * 100) : null;
+        prev.bbPct    = (prev.bbA    != null) ? ((B - prev.bbA)    / prev.bbA    * 100) : null;
+        prev.vwapPct  = (prev.vwapA  != null) ? ((B - prev.vwapA)  / prev.vwapA  * 100) : null;
+        prev.avgPct   = (prev.avgA   != null) ? ((B - prev.avgA)   / prev.avgA   * 100) : null;
+      }
+      arr.push({
+        hhmm, time: timeLabel, price: todayBar.close,
+        pivotA, stA, bbA, vwapA, avgA,
+        pivotPct: null, stPct: null, bbPct: null, vwapPct: null, avgPct: null, // filled in retroactively by the NEXT tick
+        orbStatus, rollingStatus, atrOk
+      });
       if(arr.length > 40) arr.splice(0, arr.length - 40); // generous cap — a full trading day is ~25 ticks at 15-min
       // Trim to the most recent INTRADAY_HISTORY_MAX_DATES dates for this stock
       const dateKeys = Object.keys(symHist).sort();
@@ -1649,6 +1681,28 @@
   $("paytmHoldingsBtn").addEventListener("click", () => paytmShowPortfolio("/paytm/holdings", "Holdings"));
   $("paytmFundsBtn").addEventListener("click", () => paytmShowPortfolio("/paytm/funds", "Funds"));
   $("paytmOrdersBtn").addEventListener("click", () => paytmShowPortfolio("/paytm/orders", "Order Book"));
+  // 🆕 Security Master CSV (Debug) — explicit user instruction (Sep
+  // 2026, Tamil): "CSV File-ஐ எப்படி எடுத்துக் கொடுக்கிறது". Reuses the
+  // app's OWN existing authenticated proxy connection (paytmFetch) — no
+  // external tool (Postman etc.) needed, just tap this button in the app
+  // you already have. Shows the RAW CSV text as plain text (not
+  // JSON.stringify'd, which would just escape every newline as a
+  // literal \n and make it unreadable/hard to copy).
+  $("paytmSecMasterBtn").addEventListener("click", async () => {
+    const out = $("paytmPortfolioOut");
+    out.style.display = "block";
+    out.textContent = "Security Master CSV Loading… (இது ஒரு பெரிய File, கொஞ்சம் Time ஆகலாம்)";
+    const r = await paytmFetch("/paytm/security-master?file_name=NSE_Equity");
+    if(!r || !r.ok){
+      out.textContent = (r && (r.message || r.error)) || "Failed";
+      return;
+    }
+    const raw = typeof r.data === "string" ? r.data : JSON.stringify(r.data, null, 2);
+    // Show only the first ~3000 characters (header + first few rows) —
+    // the person just needs to copy the HEADER LINE to confirm exact
+    // column names, not the full multi-thousand-row file.
+    out.textContent = raw.length > 3000 ? raw.slice(0, 3000) + "\n\n… (Full File Truncate ஆயிடுச்சு, Top Rows Copy பண்ணி Paste பண்ணுங்க)" : raw;
+  });
 
   // ══════════════════════════════════════════════════════════════════
   // 🆕 Formatted Order Book (Live Status + Cancel) — explicit user
@@ -2800,7 +2854,37 @@
     renderN50Charts(days);
     renderInvestmentPlan(days);
     renderOtherIndicators(days);
+    renderStatusIndicatorsBlock();
     initQuickOrderPanel();
+  }
+
+  // 🆕 Static Status Indicators (ATR/ORB/Rolling) — explicit user
+  // instruction (Sep 2026, Tamil): "Bias மட்டும் சொல்லும் 3 Indicators,
+  // Constant-ஆ Top-ல் Static-ஆ நிக்கணும்". Reads today's LATEST recorded
+  // tick's own orbStatus/rollingStatus/atrOk fields directly — no
+  // averaging, no history table, just "what is it saying right now".
+  function renderStatusIndicatorsBlock(){
+    const sym = n50ActiveSym;
+    const el = $("statusIndicatorsBody");
+    if(!sym || !el) return;
+    const todayStr = getIstDateStr(Date.now());
+    const ticks = (intradayHistory[sym] && intradayHistory[sym][todayStr]) || [];
+    const latest = ticks.length ? ticks[ticks.length - 1] : null;
+    function statusLine(label, value, kind){
+      if(value == null) return `<div>${label}: <span style="color:var(--muted);">— (Data இன்னும் இல்ல)</span></div>`;
+      if(kind === "bool"){
+        const ok = value === true;
+        return `<div>${label}: <span class="${ok ? "up" : "down"}" style="font-weight:700;">${ok ? "✅ Survived" : "❌ Breached"}</span></div>`;
+      }
+      const cls = value === "UP" ? "up" : value === "DOWN" ? "down" : "";
+      const text = value === "UP" ? "🟢 Bullish" : value === "DOWN" ? "🔴 Bearish" : "⚪ Neutral";
+      return `<div>${label}: <span class="${cls}" style="font-weight:700;">${text}</span></div>`;
+    }
+    el.innerHTML = [
+      statusLine("🛑 ATR Stop-Loss", latest ? latest.atrOk : null, "bool"),
+      statusLine("🔔 Fixed ORB", latest ? latest.orbStatus : null, "status"),
+      statusLine("🔁 Rolling Range", latest ? latest.rollingStatus : null, "status")
+    ].join("");
   }
 
   // ── 🆕 கடைசி 7/3 நாட்கள் Candle/Line Chart — explicit user instruction
@@ -3827,7 +3911,6 @@
       }
       if($("n50ListView").style.display !== "none"){
         renderN50List($("n50Search").value);
-        renderTopPerformers();
       renderUnifiedLeaderboard();
       }
     } finally {
@@ -3864,113 +3947,18 @@
       done++;
       $("n50ListStatus").innerHTML = `<span class="loading-dot"></span>${total} Stocks Auto Fetch ஆகுது… (${done}/${total})`;
       renderN50List($("n50Search").value); // progressively flip tags to ✓ Fetched
-      renderTopPerformers();
       renderUnifiedLeaderboard();
     }, 6);
     $("n50ListStatus").textContent = "";
     n50BulkRunning = false;
-    backfillOwnDailyHistoryOnce(); // one-time — makes Strike Rate/Top Performers ready immediately instead of waiting real days
+    backfillOwnDailyHistoryOnce(); // one-time — makes Strike Rate ready immediately instead of waiting real days
     renderN50List($("n50Search").value);
-    renderTopPerformers();
       renderUnifiedLeaderboard();
   }
 
   // ══════════════════════════════════════════════════════════════════
   // 🆕 Top Performers (Top 10 / Top 5 / Top 3) — explicit user instruction
   // (Sep 2026, Tamil): "மோஸ்ட் நிப்ட்டி 50-ல் மோஸ்ட் டென், மோஸ்ட் ஃபைவ்,
-  // மோஸ்ட் த்ரீ வரணும் ... இது ஸ்டாடிஸ்டிக்ஸ் அடிப்படையில் பெஸ்ட்டா
-  // இருக்கணும், சும்மா ஏனோதானா கொடுக்க கூடாது". Ranking is 100%
-  // data-driven — the SAME historical Pivot-Point backtest already built
-  // for the single-stock page (backtestPivotSuccess) run for EVERY cached
-  // stock, sorted by real Success %, highest first. A stock needs at
-  // least 3 backtestable days to qualify (avoids a stock with only 1-2
-  // days showing a meaningless 100%/0%). Design choices below (which
-  // emoji/flash speed per tier, where this panel sits) were left to me —
-  // 🔥 fast-flash for Top 3, ⭐ slower-flash for Top 5, ✨ static for Top
-  // 10, simply as a visual hierarchy (top 3 catches the eye fastest).
-  // ══════════════════════════════════════════════════════════════════
-  function computeAllStockBacktests(){
-    const out = [];
-    stockList.forEach(([sym, name]) => {
-      // 🆕 Uses ownDailyHistory (this app's own day-by-day collected
-      // data — see recordTodayIntoOwnHistoryIfConfirmed above), NOT
-      // n50Hist's Yahoo backfill, per explicit user instruction. Every
-      // entry here was appended only after being confirmed final, so
-      // pass lastEntryIsLive=false to backtestPivotSuccess.
-      const days = ownDailyHistory[sym];
-      if(!days || days.length < 4) return; // need >=4 confirmed days for >=3 backtestable pairs
-      const r = backtestPivotSuccess(days, false);
-      if(r.total < 3) return;
-      out.push({ sym, name, success: r.success, total: r.total, fail: r.fail, pct: r.success / r.total * 100 });
-    });
-    out.sort((a,b) => b.pct - a.pct || b.total - a.total);
-    return out;
-  }
-  function groupStrikeRate(list){
-    let success = 0, total = 0;
-    list.forEach(s => { success += s.success; total += s.total; });
-    return { success, total, fail: total - success, pct: total ? (success/total*100) : null };
-  }
-  function renderTopTier(tierKey, tierTitle, badgeHtml, list, groupRate){
-    const rateText = groupRate.pct === null ? "—" : `✅ ${groupRate.success}/${groupRate.total} (${groupRate.pct.toFixed(0)}%) Success`;
-    const itemsHtml = list.map(s => `
-      <div class="top-item" data-sym="${s.sym}">
-        <span class="tname">${badgeHtml}<span class="sym">${s.sym}</span><span class="cname">${s.name}</span></span>
-        <span class="tstrike ${s.pct>=50?"up":"down"}">${s.pct.toFixed(0)}% (${s.success}/${s.total})</span>
-      </div>`).join("");
-    return `<div class="top-tier" data-tier="${tierKey}">
-      <div class="top-tier-head">
-        <span class="ttitle">${tierTitle}</span>
-        <span class="top-tier-share" data-tier-share="${tierKey}">📤 Share</span>
-      </div>
-      <div class="top-group-strike">📊 Daily Strike Rate (Group Combined): ${rateText}</div>
-      ${itemsHtml || `<div class="stock-empty">போதுமான Backtest Data இல்ல.</div>`}
-    </div>`;
-  }
-  function buildTierShareText(tierTitle, list, groupRate){
-    const dateStr = new Date().toLocaleDateString("en-IN", { day:"2-digit", month:"short", year:"numeric" });
-    const rateText = groupRate.pct === null ? "—" : `${groupRate.success}/${groupRate.total} (${groupRate.pct.toFixed(0)}%)`;
-    const lines = list.map((s,i) => `${i+1}. *${s.sym}* (${s.name}) — ${s.pct.toFixed(0)}% (${s.success}/${s.total})`).join("\n");
-    return `📅 ${dateStr}\n🏆 *${tierTitle}* — Nifty 50 (Historical Pivot Backtest)\n\n${lines}\n\n📊 Group Combined Strike Rate: ${rateText}\n\n⚠️ இது ஒரு Historical Backtest Ranking மட்டும், Investment Advice/Guarantee இல்ல. சொந்த ஆராய்ச்சி + Risk Capacity வெச்சு தான் இறுதி முடிவு எடுக்கணும்.`;
-  }
-  function renderTopPerformers(){
-    const el = $("topPerformersBody");
-    if(!el) return;
-    const all = computeAllStockBacktests();
-    if(!all.length){ el.innerHTML = `<div class="stock-empty">App Collect பண்ற Own Data இன்னும் போதாது — ஒவ்வொரு Trading Day Market Close ஆனதுக்கு அப்புறமும் இது தானா 1 நாள் Data சேர்த்துக்கும், கொஞ்ச நாளில் Ranking வரும்.</div>`; return; }
-    // 🐛 FIX (Sep 2026, found from user's screenshots): previously
-    // ranked whichever stocks had the highest % REGARDLESS of whether
-    // that % was actually a Loss-zone value (<50%) — a screenshot showed
-    // "BAJAJFINSV 22%" labelled "🥇 Best 1", while the SAME number was
-    // shown in Red/Loss color right next to it. A Loss-zone stock can
-    // never be genuinely "Best" just for being the least-bad among
-    // losers. Now only stocks with Strike Rate ≥50% (genuine winners)
-    // qualify for Top/Best ranking at all.
-    const qualifying = all.filter(s => s.pct >= 50);
-    if(!qualifying.length){
-      el.innerHTML = `<div class="stock-empty">⚠️ இப்போ 50%-க்கு மேல் Strike Rate இருக்குற Stock ஒண்ணும் இல்ல. Loss-Zone Stocks-ஐ "Best/Top"-ன்னு தவறா காட்டாம, இங்க எதுவும் Show பண்ணல் — Data இன்னும் சேரட்டும்.</div>`;
-      return;
-    }
-    const top10 = qualifying.slice(0, 10), top5 = qualifying.slice(0, 5), top3 = qualifying.slice(0, 3), top1 = qualifying.slice(0, 1);
-    el.innerHTML =
-      renderTopTier("10", "✨ Top 10", `<span class="top-badge">✨</span>`, top10, groupStrikeRate(top10)) +
-      renderTopTier("5", "⭐ Top 5", `<span class="top-badge flash-slow">⭐</span>`, top5, groupStrikeRate(top5)) +
-      renderTopTier("3", "🔥 Top 3", `<span class="top-badge flash-fast">🔥</span>`, top3, groupStrikeRate(top3)) +
-      renderTopTier("1", "🥇 Best 1", `<span class="top-badge flash-fast">🥇</span>`, top1, groupStrikeRate(top1));
-    el.querySelectorAll(".top-item[data-sym]").forEach(row => {
-      row.addEventListener("click", () => openN50Form(row.getAttribute("data-sym")));
-    });
-    el.querySelectorAll("[data-tier-share]").forEach(btn => {
-      btn.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        const tier = btn.getAttribute("data-tier-share");
-        const list = tier === "10" ? top10 : tier === "5" ? top5 : tier === "3" ? top3 : top1;
-        const title = tier === "10" ? "✨ Top 10" : tier === "5" ? "⭐ Top 5" : tier === "3" ? "🔥 Top 3" : "🥇 Best 1";
-        openShareSheetWithText(`${title} — Nifty 50`, buildTierShareText(title, list, groupStrikeRate(list)));
-      });
-    });
-  }
-
   // ══════════════════════════════════════════════════════════════════
   // 🆕 One Point of Contact — All 50 Stocks, 15-min Suggestion Strike
   // Rate — explicit user instruction (Sep 2026, Tamil): "எப்போ Open
@@ -3987,26 +3975,38 @@
     stockList.forEach(([sym, name]) => {
       const hist = intradayHistory[sym];
       if(!hist) return;
+      // 🐛 REDESIGNED (Sep 2026, explicit user correction): Magnitude-
+      // based Profit-Avg/Loss-Avg per indicator (NOT Win-Rate Count,
+      // NOT 100-minus) — same corrected model as the Nifty50 List rows.
       const perInd = {};
-      LEADERBOARD_INDICATORS.forEach(ind => { perInd[ind.key] = { success:0, total:0 }; });
+      LEADERBOARD_INDICATORS.forEach(ind => { perInd[ind.key] = { profitVals: [], lossVals: [] }; });
       Object.keys(hist).forEach(dateKey => {
         (hist[dateKey] || []).forEach(t => {
           LEADERBOARD_INDICATORS.forEach(ind => {
-            const ok = tickIsSuccess(ind, t);
-            if(ok == null) return;
-            perInd[ind.key].total++; if(ok) perInd[ind.key].success++;
+            const v = t[ind.field];
+            if(v == null) return;
+            if(v >= 0) perInd[ind.key].profitVals.push(v); else perInd[ind.key].lossVals.push(v);
           });
         });
       });
-      if(!perInd.avgAll.total) return; // no recorded 15-min Suggestion ticks yet for this stock
+      const totalTicksAnyInd = LEADERBOARD_INDICATORS.reduce((s,ind) => s + perInd[ind.key].profitVals.length + perInd[ind.key].lossVals.length, 0);
+      if(!totalTicksAnyInd) return; // no recorded 15-min Suggestion ticks yet for this stock
       const indicators = {};
       LEADERBOARD_INDICATORS.forEach(ind => {
         const b = perInd[ind.key];
-        indicators[ind.key] = b.total ? { success:b.success, total:b.total, pct:b.success/b.total*100 } : null;
+        const total = b.profitVals.length + b.lossVals.length;
+        indicators[ind.key] = total ? {
+          avgProfitPct: b.profitVals.length ? (b.profitVals.reduce((a,x)=>a+x,0)/b.profitVals.length) : null,
+          avgLossPct: b.lossVals.length ? (b.lossVals.reduce((a,x)=>a+x,0)/b.lossVals.length) : null,
+          total
+        } : null;
       });
-      results.push({ sym, name, indicators, pct: indicators.avgAll.pct }); // ranked by ⭐Avg (combined among all 8)
+      // Ranked by the "avg" (5th, real Average) indicator's Profit-Avg —
+      // highest average profit magnitude first.
+      const rankPct = indicators.avg && indicators.avg.avgProfitPct != null ? indicators.avg.avgProfitPct : -Infinity;
+      results.push({ sym, name, indicators, rankPct });
     });
-    results.sort((a,b) => b.pct - a.pct);
+    results.sort((a,b) => b.rankPct - a.rankPct);
     return results;
   }
   function renderAllStocksStrikeRate(){
@@ -4022,21 +4022,16 @@
     // "மீன் மார்க்கெட் மாதிரி கசகசன்னு இருக்கக்கூடாது") — roomier
     // padding, a clearer border weight, and a dedicated Action column
     // (Buy/Sell) instead of cramming it into the Stock name cell.
-    // 🆕 Explicit user instruction (Sep 2026, Tamil): "இதுவரைக்கும்
-    // நடந்து முடிஞ்ச 15-min Strike Rate Average, Stock Name-க்கு Left
-    // Side-ல் (Very First Column) வரணும் — இதுல் இருந்து தான் Top 3
-    // Gainer/Loser" — the Avg-All indicator is pulled OUT of the
-    // per-indicator loop and shown as its own leading column, instead of
-    // being buried as the 8th column among the rest.
-    const otherIndicators = LEADERBOARD_INDICATORS.filter(ind => ind.key !== "avgAll");
-    const CELL = "border:1px solid var(--line); padding:8px 5px; text-align:center;";
+    const otherIndicators = LEADERBOARD_INDICATORS.filter(ind => ind.key !== "avg");
+    const CELL = "border:1px solid var(--line); padding:8px 4px; text-align:center;";
     function cellFor(bucket){
-      if(!bucket || !bucket.total) return `<td style="${CELL} color:var(--muted);">—</td>`;
-      const cls = bucket.pct >= 50 ? "up" : "down";
-      return `<td class="${cls}" style="${CELL} font-weight:700;">${bucket.pct.toFixed(0)}%</td>`;
+      if(!bucket) return `<td style="${CELL} color:var(--muted);">—</td>`;
+      const pText = bucket.avgProfitPct != null ? `<span class="up">+${bucket.avgProfitPct.toFixed(1)}%</span>` : `<span style="color:var(--muted);">—</span>`;
+      const lText = bucket.avgLossPct != null ? `<span class="down">${bucket.avgLossPct.toFixed(1)}%</span>` : `<span style="color:var(--muted);">—</span>`;
+      return `<td style="${CELL} font-weight:700; font-size:9.5px; line-height:1.5;">${pText}<br>${lText}</td>`;
     }
     const STICKY = "position:sticky; top:0; z-index:2;";
-    const colgroup = `<colgroup><col style="width:11%;"><col style="width:15%;">${otherIndicators.map(()=>'<col style="width:9%;">').join("")}<col style="width:12%;"></colgroup>`;
+    const colgroup = `<colgroup><col style="width:13%;"><col style="width:15%;">${otherIndicators.map(()=>'<col style="width:11%;">').join("")}<col style="width:12%;"></colgroup>`;
     const headerHtml = `<tr style="background:var(--card2); color:var(--gold); font-size:10px;">
         <th style="${CELL} background:var(--card2); ${STICKY}">⭐Avg</th>
         <th style="${CELL} text-align:left; background:var(--card2); ${STICKY}">Stock</th>` +
@@ -4044,29 +4039,26 @@
       `<th style="${CELL} background:var(--card2); ${STICKY}">Call</th></tr>`;
     const bodyRows = rows.map((r, i) => {
       let pill = "", rankCls = "";
-      // 🐛 FIX (Sep 2026, found from user's screenshots): a 🥇 medal on a
-      // Loss-zone (<50%) stock is self-contradictory — being "the least
-      // bad of the losers" doesn't make it "Best". Medals/Worst-tags now
-      // only apply when the row's OWN value genuinely qualifies (Top
-      // medals need pct≥50, Worst-warnings need pct<50) — if the top-3
-      // by rank still aren't real winners, or the bottom-3 aren't real
-      // losers, they just render as plain rows with no special badge.
-      const avgPctForRank = r.indicators.avgAll ? r.indicators.avgAll.pct : null;
-      const isRealWinner = avgPctForRank != null && avgPctForRank >= 50;
-      const isRealLoser = avgPctForRank != null && avgPctForRank < 50;
-      if(i === 0 && isRealWinner){ rankCls = "rank-badge-1"; pill = "🥇 "; }
-      else if(i === 1 && isRealWinner){ rankCls = "rank-badge-2"; pill = "🥈 "; }
-      else if(i === 2 && isRealWinner){ rankCls = "rank-badge-3"; pill = "🥉 "; }
-      else if(i === n-1 && isRealLoser){ rankCls = "rank-badge-worst1"; pill = "⚠️ "; }
-      else if(i === n-2 && isRealLoser){ rankCls = "rank-badge-worst2"; pill = "⚠️ "; }
-      else if(i === n-3 && isRealLoser){ rankCls = "rank-badge-worst3"; pill = "⚠️ "; }
+      // A 🥇 medal on a Loss-zone stock is self-contradictory — medals
+      // only apply when the row's OWN Average Profit genuinely qualifies
+      // as the actual highest (rankPct already sorted descending), and
+      // "Worst" tags only for the actual lowest — both purely by rank
+      // position here since Profit-Avg has no fixed 0-100 threshold
+      // anymore (it's an unbounded magnitude, not a win-rate).
+      const hasRealData = r.rankPct !== -Infinity;
+      if(hasRealData){
+        if(i === 0){ rankCls = "rank-badge-1"; pill = "🥇 "; }
+        else if(i === 1){ rankCls = "rank-badge-2"; pill = "🥈 "; }
+        else if(i === 2){ rankCls = "rank-badge-3"; pill = "🥉 "; }
+        else if(i === n-1){ rankCls = "rank-badge-worst1"; pill = "⚠️ "; }
+        else if(i === n-2){ rankCls = "rank-badge-worst2"; pill = "⚠️ "; }
+        else if(i === n-3){ rankCls = "rank-badge-worst3"; pill = "⚠️ "; }
+      }
       const zebra = (!rankCls && i % 2 === 1) ? "background:var(--card2);" : "";
       const nameCellStyle = rankCls ? `${CELL} text-align:left; white-space:nowrap; font-weight:800;` : `${CELL} text-align:left; white-space:nowrap; font-weight:600;`;
-      const avgCellStyle = rankCls ? `${CELL} font-weight:800;` : `${CELL} font-weight:700;`;
       const nameCellCls = rankCls || "";
-      const avgBucket = r.indicators.avgAll;
-      const avgCls = rankCls || (avgBucket && avgBucket.pct >= 50 ? "up" : "down");
-      const avgCell = `<td class="${avgCls}" style="${avgCellStyle}">${pill}${avgBucket ? avgBucket.pct.toFixed(0)+"%" : "—"}</td>`;
+      const avgBucket = r.indicators.avg;
+      const avgCell = `<td style="${CELL} font-weight:800; font-size:9.5px; line-height:1.5;">${pill}${avgBucket && avgBucket.avgProfitPct != null ? `<span class="up">+${avgBucket.avgProfitPct.toFixed(1)}%</span>` : `<span style="color:var(--muted);">—</span>`}<br>${avgBucket && avgBucket.avgLossPct != null ? `<span class="down">${avgBucket.avgLossPct.toFixed(1)}%</span>` : `<span style="color:var(--muted);">—</span>`}</td>`;
       const actionCell = `<td style="${CELL} white-space:nowrap; padding:6px 3px;">
           <span class="btn" data-buy-sym="${r.sym}" style="display:inline-block; padding:4px 7px; font-size:11px; margin:0 2px; background:rgba(47,191,113,0.15); border-color:var(--up); color:var(--up);">🟢Buy</span>
           <span class="btn" data-sell-sym="${r.sym}" style="display:inline-block; padding:4px 7px; font-size:11px; margin:0 2px; background:rgba(226,84,74,0.15); border-color:var(--down); color:var(--down);">🔴Sell</span>
@@ -4131,12 +4123,12 @@
     const todayStr = getIstDateStr(Date.now());
     if(numDays === 1){
       const todayTicks = hist[todayStr] || [];
-      return todayTicks.filter(t => t.pct != null).map(t => t.pct);
+      return todayTicks.filter(t => t.pivotPct != null).map(t => t.pivotPct);
     }
     const dateKeys = Object.keys(hist).sort().slice(-numDays);
     const series = [];
     dateKeys.forEach(dateKey => {
-      (hist[dateKey] || []).forEach(t => { if(t.pct != null) series.push(t.pct); });
+      (hist[dateKey] || []).forEach(t => { if(t.pivotPct != null) series.push(t.pivotPct); });
     });
     return series;
   }
@@ -4352,43 +4344,25 @@
   // so this Leaderboard's sample size starts small (from whenever this
   // feature version began running) and grows day by day, unlike the
   // Daily-Backtest version which had 60 days available instantly.
+  // 🆕 REDESIGNED per explicit user instruction (Sep 2026, Tamil): only
+  // indicators with a genuine numeric Buy-Rate (A) qualify for the
+  // Profit/Loss magnitude system — ATR/ORB/Rolling give Status/Boolean
+  // only (no rate), so they're excluded here entirely and shown
+  // separately as their own static 3-line display instead (see
+  // renderStatusIndicatorsBlock). "Avg" is a genuine 5th indicator with
+  // its OWN A (mean of the other 4 A's) and its OWN %, not a vote.
   const LEADERBOARD_INDICATORS = [
-    { key:"pivot", label:"🎯Pivot", field:"pct",          mode:"pct" },
-    { key:"st",    label:"📈ST",    field:"stPct",        mode:"pct" },
-    { key:"bb",    label:"📊BB",    field:"bbPct",        mode:"pct" },
-    { key:"atr",   label:"🛑ATR",   field:"atrOk",        mode:"bool" },
-    { key:"orb",   label:"🔔ORB",   field:"orbStatus",    mode:"status" },
-    { key:"roll",  label:"🔁Roll",  field:"rollingStatus", mode:"status" },
-    { key:"vwap",  label:"💹VWAP",  field:"vwapPct",      mode:"pct" },
-    // 🆕 8th — "Average Among All" — explicit user instruction (Sep 2026,
-    // Tamil): "இந்த 7-க்கும் ஆவரேஜ்-ன்னு ஒன்னு இருக்கணும், அது ஒரு
-    // Indication-ஆ வரணும். 9:15-10:00 வரைக்கும் Rolling Range Ready
-    // ஆகாததால் 6 Indicators-ஓட Average மட்டும் வரும், 10:15 முதல் 7-ம்
-    // சேர்ந்து Average வரும் — இதுவும் Correct-ஆ Reflect ஆகணும்". At
-    // each tick, this MAJORITY-VOTES across whichever of the OTHER 7
-    // indicators have a valid reading right then (see tickIsSuccess
-    // below) — so it naturally uses 6 before Rolling warms up, 7 after,
-    // no special-casing needed elsewhere.
-    { key:"avgAll", label:"⭐Avg", field:null, mode:"avgAll" }
+    { key:"pivot", label:"🎯Pivot", field:"pivotPct", mode:"pct" },
+    { key:"st",    label:"📈ST",    field:"stPct",    mode:"pct" },
+    { key:"bb",    label:"📊BB",    field:"bbPct",    mode:"pct" },
+    { key:"vwap",  label:"💹VWAP",  field:"vwapPct",  mode:"pct" },
+    { key:"avg",   label:"⭐Avg",   field:"avgPct",   mode:"pct" }
   ];
   const DAILY_LEADERBOARD_MAX_DAYS = 10; // most recent N dates shown, newest first
   function tickIsSuccess(ind, tick){
-    if(ind.mode === "avgAll"){
-      let s = 0, t = 0;
-      LEADERBOARD_INDICATORS.forEach(other => {
-        if(other.mode === "avgAll") return; // never average itself in
-        const ok = tickIsSuccess(other, tick);
-        if(ok != null){ t++; if(ok) s++; }
-      });
-      if(t === 0) return null;
-      return (s / t) >= 0.5; // majority of the AVAILABLE indicators voted Success
-    }
     const v = tick[ind.field];
-    if(v == null) return null; // no reading recorded for this indicator at this tick
-    if(ind.mode === "pct") return v >= 0;      // Profit (≥0) = Success
-    if(ind.mode === "bool") return v === true;  // Stop-Loss survived = Success
-    if(ind.mode === "status") return v === "UP"; // Bullish reading = Success
-    return null;
+    if(v == null) return null; // no reading yet (pending — outcome not finalized until the NEXT tick) or missing data
+    return v >= 0; // Profit (≥0) = Success
   }
   function computeUnifiedLeaderboard(){
     const indicatorData = {};
@@ -4498,6 +4472,67 @@
   }
 
   function renderN50List(filterText){
+    // ══════════════════════════════════════════════════════════════════
+    // 🆕 Per-Stock 3-Row Stats (Today/3-Day/7-Day) — explicit user
+    // instruction (Sep 2026, Tamil): "8 Trending Indicators-ஓட Average
+    // Profit% / Average Loss% / Average Ticks-Elapsed — 3 Rows (Today,
+    // 3-Day, 7-Day), Ramp-Up Rule (Today=Day1) படி". Replaces the OLD
+    // single-indicator Daily-Backtest badge (which used a 3-month
+    // window + a Pivot-only "Both S1 AND R1 same day" criterion the
+    // person never actually asked for).
+    // - Profit%/Loss% are averaged only over indicators that HAVE at
+    //   least one tick so far (an indicator with zero ticks — e.g.
+    //   Rolling before its 10:15 AM warm-up — has no defined percentage,
+    //   so it's excluded from that average, not counted as 0%).
+    // - Ticks-Elapsed IS averaged across all 8 including zeros — that's
+    //   the point: it reflects how unevenly the 8 indicators have
+    //   started so far (decimal values are expected and correct).
+    function computeIndicatorAvgStatsForWindow(sym, numDays){
+      const hist = intradayHistory[sym];
+      if(!hist) return null;
+      const todayStr = getIstDateStr(Date.now());
+      const dateKeys = numDays === 1 ? [todayStr] : Object.keys(hist).sort().slice(-numDays);
+      // 🐛 REDESIGNED per explicit user correction (Sep 2026, Tamil):
+      // "Profit%/Loss% Magnitude-based Average-ஆ இருக்கணும், Win-Rate
+      // Count இல்ல — 100−Profit=Loss Logic Silly, ஏன்னா % Unbounded".
+      // Now: gather every (indicator, tick) reading's ACTUAL % value
+      // across the 5 magnitude indicators; average the POSITIVE ones
+      // separately from the NEGATIVE ones — two independent averages,
+      // no 100-complement relationship.
+      const profitVals = [], lossVals = [];
+      let ticksSum = 0, indWithData = 0;
+      LEADERBOARD_INDICATORS.forEach(ind => {
+        let indTicks = 0;
+        dateKeys.forEach(dateKey => {
+          (hist[dateKey] || []).forEach(tick => {
+            const v = tick[ind.field];
+            if(v == null) return; // pending (outcome not finalized yet) or missing
+            indTicks++;
+            if(v >= 0) profitVals.push(v); else lossVals.push(v);
+          });
+        });
+        ticksSum += indTicks;
+        indWithData++;
+      });
+      const avgTicksElapsed = indWithData ? (ticksSum / indWithData) : 0;
+      const avgProfitPct = profitVals.length ? (profitVals.reduce((a,b) => a+b, 0) / profitVals.length) : null;
+      const avgLossPct = lossVals.length ? (lossVals.reduce((a,b) => a+b, 0) / lossVals.length) : null;
+      if(avgProfitPct == null && avgLossPct == null) return { avgProfitPct: null, avgLossPct: null, avgTicksElapsed };
+      return { avgProfitPct, avgLossPct, avgTicksElapsed };
+    }
+    function renderStatsRow(label, stats){
+      if(!stats || (stats.avgProfitPct == null && stats.avgLossPct == null)){
+        return `<div style="font-size:10px; color:var(--muted);">🕒 ${label}: —</div>`;
+      }
+      // 🐛 FIX (Sep 2026, explicit user instruction): "Profit % Green,
+      // Loss % Red, Total Ticks White" — 3 SEPARATE colors on the SAME
+      // line. Profit/Loss are now independent magnitude averages (can
+      // each be null if that window had NO profit ticks, or NO loss
+      // ticks, at all — shown as "—" rather than crashing).
+      const profitText = stats.avgProfitPct != null ? `+${stats.avgProfitPct.toFixed(1)}%` : "—";
+      const lossText = stats.avgLossPct != null ? `${stats.avgLossPct.toFixed(1)}%` : "—";
+      return `<div style="font-size:10.5px; font-weight:700; color:var(--text);">🕒 ${label}: <span class="up">${profitText}</span> / <span class="down">${lossText}</span> / <span style="color:#fff;">${stats.avgTicksElapsed.toFixed(1)}</span></div>`;
+    }
     const body = $("n50ListBody");
     const q = (filterText || "").trim().toUpperCase();
     const rows = stockList.filter(([sym, name]) => !q || sym.toUpperCase().includes(q) || (name||"").toUpperCase().includes(q));
@@ -4507,26 +4542,17 @@
     }
     body.innerHTML = rows.map(([sym, name]) => {
       const has = n50HasData(sym);
-      // 🆕 Per-stock "Strike Rate Today" badge — explicit user instruction
-      // (Sep 2026, Tamil): "ஒவ்வொரு Stock-க்கும் பக்கத்துல ஒரு Icon —
-      // Strike Rate Positive-ஆ இருந்தா Green-ல எத்தனை %, Loss-ல இருந்தா
-      // Red-ல Strike Rate காட்டணும்". Uses the SAME own-collected daily
-      // history (ownDailyHistory) as Top Performers — refreshes
-      // automatically on every 15-min N50 auto-refresh tick, since that
-      // tick already re-calls renderN50List() when this list is open.
-      const ownDays = ownDailyHistory[sym];
-      let strikeBadge = `<span class="signal-badge flat">🎯 Strike Rate: —</span>`;
-      if(ownDays && ownDays.length >= 4){
-        const r = backtestPivotSuccess(ownDays, false);
-        if(r.total >= 3){
-          const pct = r.success / r.total * 100;
-          strikeBadge = `<span class="signal-badge ${pct >= 50 ? "up" : "down"}">🎯 ${pct.toFixed(0)}% (${r.success}/${r.total})</span>`;
-        }
-      }
+      const statsToday = computeIndicatorAvgStatsForWindow(sym, 1);
+      const stats3Day = computeIndicatorAvgStatsForWindow(sym, 3);
+      const stats7Day = computeIndicatorAvgStatsForWindow(sym, 7);
       return `<div class="n50-item" data-sym="${sym}">
         <span><span class="sym">${sym}</span><span class="cname">${name}</span></span>
+        <div style="margin:4px 0;">
+          ${renderStatsRow("Today", statsToday)}
+          ${renderStatsRow("3-Day", stats3Day)}
+          ${renderStatsRow("7-Day", stats7Day)}
+        </div>
         <span style="display:flex; align-items:center; gap:6px;">
-          ${strikeBadge}
           <span class="n50-tag empty" data-ticklog-sym="${sym}" title="Today All 15-min Rate">🕒 15-min</span>
           <span class="n50-tag ${has ? "saved" : "empty"}">${has ? "✓ Fetched" : "Tap பண்ணுங்க"}</span>
         </span>
@@ -4562,7 +4588,7 @@
     // Ticks / Total Ticks × 100 (a Win Rate/Count, NOT a Mean of the raw
     // % numbers).
     const avgEl = $("n50TickLogAvg");
-    const validPcts = ticks.map(t => t.pct).filter(p => p != null);
+    const validPcts = ticks.map(t => t.pivotPct).filter(p => p != null);
     if(!validPcts.length){
       avgEl.innerHTML = "";
     }else{
@@ -4583,8 +4609,8 @@
       bodyEl.innerHTML = `<div class="stock-empty">இன்னும் இன்றைக்கு Tick எதுவும் Record ஆகல — Market Open ஆகி, முதல் 15-min Auto-Refresh நடந்த உடனே இங்க Show ஆகும்.</div>`;
     }else{
       bodyEl.innerHTML = ticks.map(t => {
-        const pctText = (t.pct == null) ? "—" : `${t.pct >= 0 ? "🟢 +" : "🔴 "}${t.pct.toFixed(2)}%`;
-        const pctClass = (t.pct == null) ? "" : (t.pct >= 0 ? "up" : "down");
+        const pctText = (t.pivotPct == null) ? "—" : `${t.pivotPct >= 0 ? "🟢 +" : "🔴 "}${t.pivotPct.toFixed(2)}%`;
+        const pctClass = (t.pivotPct == null) ? "" : (t.pivotPct >= 0 ? "up" : "down");
         return `<div class="n50-hgrid"><span>${t.time}</span><span class="v nums">₹${fmt(t.price)}</span><span class="v nums ${pctClass}" style="grid-column:3/5;">${pctText}</span></div>`;
       }).join("");
     }
@@ -4656,11 +4682,16 @@
 
   function openN50List(){
     renderN50List($("n50Search").value);
-    renderTopPerformers();
       renderUnifiedLeaderboard();
     $("n50ListView").style.display = "flex";
     fetchAllN50History(); // auto-fetch every stock not already cached today, no tap needed
-    backfillIntradayHistoryOnce(); // one-time — pulls past-days' 15-min history directly from Yahoo, no-op if already done
+    // 🐛 DISABLED (Sep 2026, explicit user instruction): "எந்த Fake/Pre-
+    // Loaded Figure-உம் இருக்க கூடாது, நாளைக்கு 9:15 AM-ல் இருந்தே Fresh-
+    // ஆ Start ஆகணும்". This call used to pull PAST days' 15-min bars
+    // from Yahoo into intradayHistory — even though it never computed
+    // fake pct/A values for those old bars, the person wants NO
+    // intraday history at all until it's genuinely, live recorded
+    // starting tomorrow. backfillIntradayHistoryOnce(); // (kept defined above, just no longer called)
   }
   function closeN50List(){
     $("n50ListView").style.display = "none";
