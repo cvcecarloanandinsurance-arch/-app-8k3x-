@@ -992,17 +992,25 @@
       // null ("pending") until the tick after it arrives.
       if(arr.length){
         const prev = arr[arr.length - 1];
-        const B = todayBar.close;
-        prev.pivotPct = (prev.pivotA != null) ? ((B - prev.pivotA) / prev.pivotA * 100) : null;
-        prev.stPct    = (prev.stA    != null) ? ((B - prev.stA)    / prev.stA    * 100) : null;
-        prev.bbPct    = (prev.bbA    != null) ? ((B - prev.bbA)    / prev.bbA    * 100) : null;
-        prev.vwapPct  = (prev.vwapA  != null) ? ((B - prev.vwapA)  / prev.vwapA  * 100) : null;
-        prev.avgPct   = (prev.avgA   != null) ? ((B - prev.avgA)   / prev.avgA   * 100) : null;
+        // 🆕 Guard (Sep 2026): only fill in if still pending — the
+        // independent finalizeDuePendingTicks() checker below may have
+        // ALREADY finalized this tick the instant its own real 15-min
+        // window elapsed, ahead of this bulk 15-min cycle arriving.
+        // Re-filling here would just redo the same work, so skip if done.
+        if(prev.pivotPct == null){
+          const B = todayBar.close;
+          prev.pivotPct = (prev.pivotA != null) ? ((B - prev.pivotA) / prev.pivotA * 100) : null;
+          prev.stPct    = (prev.stA    != null) ? ((B - prev.stA)    / prev.stA    * 100) : null;
+          prev.bbPct    = (prev.bbA    != null) ? ((B - prev.bbA)    / prev.bbA    * 100) : null;
+          prev.vwapPct  = (prev.vwapA  != null) ? ((B - prev.vwapA)  / prev.vwapA  * 100) : null;
+          prev.avgPct   = (prev.avgA   != null) ? ((B - prev.avgA)   / prev.avgA   * 100) : null;
+        }
       }
       arr.push({
         hhmm, time: timeLabel, price: todayBar.close,
+        tickAt: Date.now(), // 🆕 real wall-clock timestamp — lets finalizeDuePendingTicks() know EXACTLY when this tick's own 15-min window is up, independent of when the next 50-stock bulk-refresh happens to land
         pivotA, stA, bbA, vwapA, avgA,
-        pivotPct: null, stPct: null, bbPct: null, vwapPct: null, avgPct: null, // filled in retroactively by the NEXT tick
+        pivotPct: null, stPct: null, bbPct: null, vwapPct: null, avgPct: null, // filled in retroactively — either by the next bulk tick, or sooner by finalizeDuePendingTicks()
         orbStatus, rollingStatus, atrOk
       });
       if(arr.length > 40) arr.splice(0, arr.length - 40); // generous cap — a full trading day is ~25 ticks at 15-min
@@ -2725,6 +2733,95 @@
     }
   }
 
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 TODAY's own Intraday Backfill — built in response to "9:15 லேர்ந்தே
+  // எல்லா தரவும் வரணும்" (Sep 2026, Tamil). ⚠️ NOT WIRED UP BY DEFAULT —
+  // see why below, kept defined-but-uncalled the same way
+  // backfillIntradayHistoryOnce() above already is.
+  //
+  // This WOULD fetch Yahoo's 15m intraday bars (same endpoint as the past-
+  // days backfill above) to fill today's 9:15→now gap whenever the page
+  // is opened late, then retroactively finalize each slot's Strike Rate.
+  // BUT: this directly conflicts with an EARLIER explicit instruction
+  // (see openN50List() below, "🐛 DISABLED" comment) — "எந்த Fake/Pre-
+  // Loaded Figure-உம் இருக்க கூடாது, Fresh-ஆ Start ஆகணும்" (no fake/
+  // pre-loaded figure should exist, must start genuinely fresh) — the
+  // person deliberately rejected backfilled intraday data before,
+  // specifically because backfilled slots can't be 100% genuinely live
+  // (SuperTrend/Bollinger/VWAP's reference values are approximated using
+  // "now", not the true value at that historical moment — see the note
+  // that WAS here). Wiring this up would silently reverse that earlier
+  // decision, so it's left disabled until explicitly confirmed either way.
+  // ══════════════════════════════════════════════════════════════════
+
+  const LS_TODAY_BACKFILL_DATE_KEY = "marketStatus_todayBackfillDoneDate_v1";
+  function isTodayBackfillDoneFor(dateStr){ try{ return localStorage.getItem(LS_TODAY_BACKFILL_DATE_KEY) === dateStr; }catch(e){ return false; } }
+  function markTodayBackfillDoneFor(dateStr){ try{ localStorage.setItem(LS_TODAY_BACKFILL_DATE_KEY, dateStr); }catch(e){} }
+  let todayBackfillRunning = false;
+  async function backfillTodayIntradayIfNeeded(){
+    const todayStr = getIstDateStr(Date.now());
+    if(isTodayBackfillDoneFor(todayStr) || todayBackfillRunning) return;
+    todayBackfillRunning = true;
+    try{
+      await fetchInChunks(stockList, async ([sym]) => {
+        const bars = await fetchIntraday15mBars(encodeURIComponent(sym) + ".NS");
+        if(!bars || !bars.length) return;
+        const todaysBars = bars.filter(b => b.dateKey === todayStr).sort((a,b) => a.hhmm.localeCompare(b.hhmm));
+        if(!todaysBars.length) return;
+        const symHist = intradayHistory[sym] || (intradayHistory[sym] = {});
+        const arr = symHist[todayStr] || (symHist[todayStr] = []);
+        const existingHHMMs = new Set(arr.map(t => t.hhmm));
+        const cached = n50Hist[sym];
+        const stNow = cached ? computeSuperTrend(cached.days, 10, 3) : null;
+        const bbNow = cached ? computeBollingerBands(cached.days, 20, 2) : null;
+        const vwapNow = cached ? cached.vwap : null;
+        todaysBars.forEach(b => {
+          if(existingHHMMs.has(b.hhmm)) return; // a genuinely LIVE-recorded tick already owns this slot — never overwrite it
+          const lv = computeTimeAlignedWeeklyPivotLevels(sym, b.hhmm) || computeLiveWeeklyPivotLevels(sym);
+          const pivotA = lv ? lv.S1 : null;
+          const stA = stNow ? stNow.value : null;
+          const bbA = bbNow ? bbNow.middle : null;
+          const vwapA = vwapNow;
+          const validAs = [pivotA, stA, bbA, vwapA].filter(v => v != null);
+          const avgA = validAs.length ? (validAs.reduce((a,c) => a+c, 0) / validAs.length) : null;
+          arr.push({
+            hhmm: b.hhmm, time: formatHHMMLabel(b.hhmm), price: b.price,
+            tickAt: null, // backfilled, not a real-time record — finalizeDuePendingTicks' elapsed-time check correctly leaves these alone (see its own !last.tickAt guard)
+            pivotA, stA, bbA, vwapA, avgA,
+            pivotPct: null, stPct: null, bbPct: null, vwapPct: null, avgPct: null,
+            orbStatus: null, rollingStatus: null, atrOk: null, // status-only indicators need live tick-by-tick tracking — left blank for backfilled slots, not guessed
+            backfilled: true
+          });
+        });
+        arr.sort((a,b) => a.hhmm.localeCompare(b.hhmm));
+        // Retroactively finalize every consecutive pair now that today's
+        // full sequence-so-far exists — same formula as recordIntradayTick.
+        // Only the LAST element may legitimately stay pending (no next
+        // bar yet to supply its outcome) — everything before it gets filled.
+        for(let i=0;i<arr.length-1;i++){
+          const cur = arr[i];
+          if(cur.pivotPct != null) continue; // already finalized live — never overwrite a real result with a backfilled approximation
+          const B = arr[i+1].price;
+          cur.pivotPct = (cur.pivotA != null) ? ((B - cur.pivotA) / cur.pivotA * 100) : null;
+          cur.stPct    = (cur.stA    != null) ? ((B - cur.stA)    / cur.stA    * 100) : null;
+          cur.bbPct    = (cur.bbA    != null) ? ((B - cur.bbA)    / cur.bbA    * 100) : null;
+          cur.vwapPct  = (cur.vwapA  != null) ? ((B - cur.vwapA)  / cur.vwapA  * 100) : null;
+          cur.avgPct   = (cur.avgA   != null) ? ((B - cur.avgA)   / cur.avgA   * 100) : null;
+        }
+        if(arr.length > 40) arr.splice(0, arr.length - 40);
+      }, 6);
+      saveIntradayHistory();
+      markTodayBackfillDoneFor(todayStr);
+      if($("n50ListView") && $("n50ListView").style.display !== "none"){
+        renderN50List($("n50Search").value);
+        renderUnifiedLeaderboard();
+      }
+    } finally {
+      todayBackfillRunning = false;
+    }
+  }
+
+
   // ── Buy/Sell Signal (Technical Indicator: SMA 5-day vs 20-day + RSI 14-day)
   // ⚠️ This is a mechanical technical-indicator calculation, NOT investment
   // advice — see the disclaimer shown above the stock list in the HTML.
@@ -3920,6 +4017,107 @@
   autoRefreshAllN50(); // runs immediately IF market is open right now (see isNseMarketOpenNow above); no-op otherwise
   setInterval(autoRefreshAllN50, N50_AUTO_REFRESH_MS); // re-checks market-hours gate every tick, so it starts/stops itself around 9:15 AM / 3:30 PM automatically
 
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Real-time Strike Rate finalization — explicit user instruction
+  // (Sep 2026, Tamil): "முதல் 15 நிமிடம் Start ஆன உடனே Suggestion
+  // வரணும், 15 நிமிடம் முடியும்போதே Strike Rate வரணும் — இது எல்லா
+  // Stock-க்கும் எல்லா Indicator-க்கும் பொருந்தணும்."
+  //
+  // The Suggestion (A) ALREADY appears the instant a tick is recorded —
+  // see recordIntradayTick() above. The gap was on the OTHER side: a
+  // tick's outcome (%) used to only get filled in whenever the NEXT
+  // scheduled 50-stock bulk refresh happened to land (every 15 min, for
+  // ALL 50 stocks together) — so if that bulk cycle got delayed (mobile
+  // Chrome suspends a backgrounded/screen-off tab's timers — see the
+  // honest-limitation note above autoRefreshAllN50), a tick's Strike
+  // Rate could stay stuck on "pending" far longer than the real 15
+  // minutes, even though the market itself had already moved on.
+  //
+  // This runs independently, once every 60 seconds (cheap: it only
+  // fetches whichever SPECIFIC stocks are actually overdue, not all 50),
+  // and checks each stock's real elapsed wall-clock time
+  // (Date.now() - tick.tickAt) instead of waiting for its turn in the
+  // big 50-stock loop. The moment any stock's tick crosses the real
+  // 15-min mark, its Strike Rate is fetched and finalized right then —
+  // same logic, same 5 indicators, applied uniformly to all 50 stocks.
+  // (Older ticks recorded before this build — with no tickAt field yet —
+  // are left to the original bulk-refresh path; nothing breaks for them.)
+  // ══════════════════════════════════════════════════════════════════
+  let n50FinalizeRunning = false;
+  async function finalizeDuePendingTicks(){
+    if(n50FinalizeRunning) return;
+    if(!isNseMarketOpenNow()) return;
+    const todayStr = getIstDateStr(Date.now());
+    const due = [];
+    stockList.forEach(([sym]) => {
+      const arr = intradayHistory[sym] && intradayHistory[sym][todayStr];
+      if(!arr || !arr.length) return;
+      const last = arr[arr.length - 1];
+      if(last.pivotPct != null) return; // already finalized
+      if(!last.tickAt) return; // pre-upgrade tick with no timestamp — leave to the old bulk-refresh path
+      if((Date.now() - last.tickAt) >= 15 * 60 * 1000) due.push(sym);
+    });
+    if(!due.length) return;
+    n50FinalizeRunning = true;
+    try{
+      await fetchInChunks(due, async (sym) => {
+        const ok = await fetchAndCacheN50(sym);
+        if(!ok) return;
+        const cached = n50Hist[sym];
+        if(!cached || !cached.days || !cached.days.length) return;
+        const B = cached.days[cached.days.length - 1].close;
+        if(B == null) return;
+        const arr = intradayHistory[sym] && intradayHistory[sym][todayStr];
+        if(!arr || !arr.length) return;
+        const last = arr[arr.length - 1];
+        if(last.pivotPct != null) return; // finalized elsewhere meanwhile — don't double-write
+        last.pivotPct = (last.pivotA != null) ? ((B - last.pivotA) / last.pivotA * 100) : null;
+        last.stPct    = (last.stA    != null) ? ((B - last.stA)    / last.stA    * 100) : null;
+        last.bbPct    = (last.bbA    != null) ? ((B - last.bbA)    / last.bbA    * 100) : null;
+        last.vwapPct  = (last.vwapA  != null) ? ((B - last.vwapA)  / last.vwapA  * 100) : null;
+        last.avgPct   = (last.avgA   != null) ? ((B - last.avgA)   / last.avgA   * 100) : null;
+      }, 6);
+      saveIntradayHistory();
+      // 🆕 Refresh EVERYWHERE this shows, not just the list — explicit
+      // user instruction (Sep 2026, Tamil): "இது ரிலேட்டட நிறைய இடத்துல
+      // இருக்கு, எல்லாத்தையும் இம்ப்ளிமெண்ட் பண்ண வேண்டும்". A finalized
+      // Strike Rate touches: the 50-stock List (Today/3-Day/7-Day rows +
+      // "15-min" tick-log), the Unified Leaderboard, AND — if the person
+      // is sitting on a SPECIFIC stock's own detail page right now — that
+      // page's Investment Plan / Other-Indicators / Status blocks too
+      // (they all read the SAME intradayHistory this just updated).
+      if($("n50ListView") && $("n50ListView").style.display !== "none"){
+        renderN50List($("n50Search").value);
+        renderUnifiedLeaderboard();
+      }
+      if(n50ActiveSym && due.includes(n50ActiveSym) && $("n50FormView") && $("n50FormView").style.display !== "none" && n50Hist[n50ActiveSym]){
+        renderN50FormData(n50Hist[n50ActiveSym].days);
+      }
+    } finally {
+      n50FinalizeRunning = false;
+    }
+  }
+  finalizeDuePendingTicks(); // catch up immediately in case the app was reopened after being backgrounded past a tick's due time
+  setInterval(finalizeDuePendingTicks, 60 * 1000); // cheap check every 60s — only fetches stocks that are actually overdue
+
+  // 🆕 Live-Suggestion repaint, independent of any network fetch — explicit
+  // user instruction (Sep 2026, Tamil): same "எங்கெங்க இருக்கோ அங்க எல்லாம்
+  // இம்ப்ளிமெண்ட் பண்ணு". The CURRENT-window Suggestion (Pivot Buy/Sell/SL,
+  // shown on both the List rows AND the single-stock Investment Plan panel)
+  // is a pure, instant CALCULATION over already-cached data — it does not
+  // need a network round-trip to change, only the wall-clock crossing into
+  // a new 15-min window. This just repaints whichever screen is currently
+  // visible every 30s so that crossover shows up immediately on-screen too,
+  // not only the next time a bulk fetch happens to run.
+  setInterval(() => {
+    if($("n50ListView") && $("n50ListView").style.display !== "none"){
+      renderN50List($("n50Search").value);
+    }
+    if(n50ActiveSym && $("n50FormView") && $("n50FormView").style.display !== "none" && n50Hist[n50ActiveSym]){
+      renderInvestmentPlan(n50Hist[n50ActiveSym].days);
+    }
+  }, 30 * 1000);
+
   // ── Auto-fetch ALL 50 stocks' history the moment the Nifty 50 Entry list
   // is opened — no more tapping into each stock one by one. Skips symbols
   // already cached for today; runs 6-at-a-time (same pattern as the main
@@ -3955,6 +4153,7 @@
     renderN50List($("n50Search").value);
       renderUnifiedLeaderboard();
   }
+
 
   // ══════════════════════════════════════════════════════════════════
   // 🆕 Top Performers (Top 10 / Top 5 / Top 3) — explicit user instruction
@@ -4533,6 +4732,24 @@
       const lossText = stats.avgLossPct != null ? `${stats.avgLossPct.toFixed(1)}%` : "—";
       return `<div style="font-size:10.5px; font-weight:700; color:var(--text);">🕒 ${label}: <span class="up">${profitText}</span> / <span class="down">${lossText}</span> / <span style="color:#fff;">${stats.avgTicksElapsed.toFixed(1)}</span></div>`;
     }
+    // 🆕 Live "current window" Suggestion — explicit user instruction
+    // (Sep 2026, Tamil): "முதல் 15 நிமிடம் Start ஆன உடனே Suggestion
+    // வரணும்". This was ALREADY computed the instant a window starts
+    // (see recordIntradayTick's pivotA), but it only ever got SHOWN
+    // inside a single stock's own "Take Order" panel after tapping into
+    // it — never here on the main 50-stock list. Reuses the EXACT same
+    // Pivot calculation the Take Order panel pre-fills its Buy/Sell/SL
+    // boxes from (computeTimeAlignedWeeklyPivotLevels, falling back to
+    // computeLiveWeeklyPivotLevels — same as line ~2127) — pure
+    // calculation over data already cached client-side, so it renders
+    // INSTANTLY on every list render/refresh, no network wait, no need
+    // to wait for a tick's outcome to finalize first.
+    function renderCurrentSuggestionRow(sym){
+      const hhmm = getHHMM(Date.now());
+      const lv = computeTimeAlignedWeeklyPivotLevels(sym, hhmm) || computeLiveWeeklyPivotLevels(sym);
+      if(!lv) return `<div style="font-size:10.5px; color:var(--muted);">🎯 இந்த Window: Suggestion இன்னும் கிடைக்கல் (Data குறைவு).</div>`;
+      return `<div style="font-size:10.5px; font-weight:700;">🎯 இந்த Window: <span class="up">Buy ₹${lv.S1.toFixed(2)}</span> | <span class="down">Sell ₹${lv.R1.toFixed(2)}</span> | 🛑SL ₹${lv.S2.toFixed(2)}</div>`;
+    }
     const body = $("n50ListBody");
     const q = (filterText || "").trim().toUpperCase();
     const rows = stockList.filter(([sym, name]) => !q || sym.toUpperCase().includes(q) || (name||"").toUpperCase().includes(q));
@@ -4547,6 +4764,7 @@
       const stats7Day = computeIndicatorAvgStatsForWindow(sym, 7);
       return `<div class="n50-item" data-sym="${sym}">
         <span><span class="sym">${sym}</span><span class="cname">${name}</span></span>
+        <div style="margin:4px 0 2px;">${renderCurrentSuggestionRow(sym)}</div>
         <div style="margin:4px 0;">
           ${renderStatsRow("Today", statsToday)}
           ${renderStatsRow("3-Day", stats3Day)}
