@@ -897,6 +897,81 @@
   }
   function saveIntradayHistory(){ try{ localStorage.setItem(LS_INTRADAY_HISTORY_KEY, JSON.stringify(intradayHistory)); }catch(e){} }
   let intradayHistory = loadIntradayHistory(); // { [sym]: { [dateKey:"YYYY-MM-DD"]: [ {hhmm:"0930", time:"09:30 AM", price:1985.5, pct}, ... ] } }
+
+  // ══════════════════════════════════════════════════════════════════
+  // 🆕 Server-side Tick Sync (Cloudflare Worker) — explicit user
+  // instruction (Sep 2026, Tamil): "Page Background-க்கு போனா Work
+  // ஆகாதே, இதை Server-side பண்ணு". A separate Cloudflare Worker (Cron
+  // Trigger, every 15 min, independent of any phone's browser tab) now
+  // tracks the Pivot Suggestion + Strike Rate for all 50 stocks on its
+  // own — see cloudflare-worker-tick-tracker.js. This pulls that data in
+  // and merges it into the SAME intradayHistory this page already reads
+  // everywhere else, so the List/Leaderboard/Strike-Rate views benefit
+  // automatically without any other code needing to change.
+  //
+  // Merge rule (kept deliberately simple and honest): for each stock/day,
+  // a WORKER tick is only added for an hhmm slot that has NO local entry
+  // at all — an already-open, live-tracking tab's own ticks are never
+  // touched or overwritten. ⚠️ Honest limitation: the Worker's Cron and
+  // this tab's own 15-min timer aren't clock-synchronized to the same
+  // second, so on a day where BOTH were tracking, their slots may sit a
+  // few minutes apart rather than merging into exactly one — in practice
+  // this mainly matters on days the tab was closed for long stretches,
+  // where the Worker fills in what would otherwise be a bare gap.
+  // ══════════════════════════════════════════════════════════════════
+  const CLOUD_WORKER_URL = "https://market-status-tick-tracker.cvcecarloanandinsurance.workers.dev";
+  function mergeWorkerDayIntoIntradayHistory(sym, dateStr, workerTicks){
+    if(!workerTicks || !workerTicks.length) return false;
+    const symHist = intradayHistory[sym] || (intradayHistory[sym] = {});
+    const arr = symHist[dateStr] || (symHist[dateStr] = []);
+    const existingHHMMs = new Set(arr.map(t => t.hhmm));
+    let changed = false;
+    workerTicks.forEach(wt => {
+      if(existingHHMMs.has(wt.hhmm)) return; // a local tick already owns this slot — never overwrite it
+      arr.push({
+        hhmm: wt.hhmm, time: wt.time, price: wt.price,
+        tickAt: wt.tickAt || null,
+        pivotA: wt.pivotA != null ? wt.pivotA : null,
+        stA: null, bbA: null, vwapA: null, avgA: null, // Worker tracks Pivot only (see cloudflare-worker-tick-tracker.js scope note) — these 4 stay unset for Worker-sourced slots
+        pivotPct: wt.pivotPct != null ? wt.pivotPct : null,
+        stPct: null, bbPct: null, vwapPct: null, avgPct: null,
+        orbStatus: null, rollingStatus: null, atrOk: null,
+        source: "worker"
+      });
+      existingHHMMs.add(wt.hhmm);
+      changed = true;
+    });
+    if(changed) arr.sort((a,b) => a.hhmm.localeCompare(b.hhmm));
+    return changed;
+  }
+  let workerSyncRunning = false;
+  async function syncFromCloudWorker(){
+    if(workerSyncRunning) return;
+    workerSyncRunning = true;
+    try{
+      const res = await fetch(`${CLOUD_WORKER_URL}/days?count=7`);
+      if(!res.ok) return;
+      const byDate = await res.json(); // { "2026-09-07": { RELIANCE: [...], ... }, ... }
+      let anyChange = false;
+      Object.keys(byDate).forEach(dateStr => {
+        const dayBlob = byDate[dateStr] || {};
+        Object.keys(dayBlob).forEach(sym => {
+          if(mergeWorkerDayIntoIntradayHistory(sym, dateStr, dayBlob[sym])) anyChange = true;
+        });
+      });
+      if(anyChange){
+        saveIntradayHistory();
+        if($("n50ListView") && $("n50ListView").style.display !== "none"){
+          renderN50List($("n50Search").value);
+          renderUnifiedLeaderboard();
+        }
+      }
+    }catch(e){
+      // Worker unreachable (offline, not yet deployed for this user, etc.) — fail silently, page still works fully off client-side tracking as before
+    } finally {
+      workerSyncRunning = false;
+    }
+  }
   function getHHMM(ms){
     const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(ms);
     const get = t => parts.find(p => p.type === t).value;
@@ -4099,6 +4174,9 @@
   }
   finalizeDuePendingTicks(); // catch up immediately in case the app was reopened after being backgrounded past a tick's due time
   setInterval(finalizeDuePendingTicks, 60 * 1000); // cheap check every 60s — only fetches stocks that are actually overdue
+
+  syncFromCloudWorker(); // 🆕 pull in whatever the Cloudflare Worker tracked while this tab was closed/backgrounded — runs once immediately on load
+  setInterval(syncFromCloudWorker, 60 * 1000); // and keep re-checking every 60s (the Worker itself only updates every 15 min, so this just catches it promptly)
 
   // 🆕 Live-Suggestion repaint, independent of any network fetch — explicit
   // user instruction (Sep 2026, Tamil): same "எங்கெங்க இருக்கோ அங்க எல்லாம்
