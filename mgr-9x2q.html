@@ -1219,7 +1219,7 @@ scan, export), never at top-level during initial script execution. -->
     about which build is actually running. Full fix-tag now lives only in
     the tooltip (title) — the on-screen text is just the version number,
     since the descriptive suffix was the widest single item in this row. -->
-    <span id="appVersionBadge" title="v352 · rescanAllPlusRealCallsBadge — ① 🔄 Re-scan All bulk button added to all 3 planned panels (🛡️ RC Related/🪪 KYC/🗂️ Consolidated) — the rescanOneKycPersonById function had existed since v351 for exactly this but was never wired to a button; KYC's per-row Re-scan stays removed as explicitly instructed earlier, only the panel-header bulk button was added. RC's own new rescanOneRegnDocById originally wrote through the old upsertInsuranceRenewalRecord()/insurance_renewal_records_v1 store — caught before shipping (that store was already deliberately abandoned per an earlier fix) and corrected to write through upsertIntoInsuranceExtractQueue(), the real current single-source-of-truth the RC panel/WhatsApp Promo/Consolidated all read from. Consolidated's Re-scan All re-runs consolidateCustomerDocumentsForMobile for every ALREADY-compiled Mobile Number (refreshing from any newer KYC/RC documents); finding brand-new never-compiled mobiles stays fully automatic as before. All three fill-blank-only (never overwrite a good existing value), show live ⏳n/total progress, and end with one combined summary alert. ② 📞 Calls Today badge (was showing a manually typed-in '0/1000' — tap the badge, type a number, it just added to a fake localStorage total with zero connection to any real call) removed entirely; the badge now shows the SAME real, phone-pad-touch-based count already computed for the 📇 badge beside it (today's distinct Business List rows whose 📞 Call icon was actually tapped) — no target, no denominator, no manual entry. · v351 · manualRcKycBizSyncBtnAdded — audited every button in the app labeled/behaving as a 'Refresh': found ONE genuinely broken/missing one — syncRcKycToBusinessList's own comment described a visible '🔄 Manual Sync' button (manualRcKycBizSyncBtn) as already wired, but the actual <button> element and click listener were never added, only the auto-run-on-load version existed. Added the real button (next to 🔀 Merge Backup from Other Phone) wired to the exact same, already-working syncRcKycToBusinessList function. Every other Refresh-labeled control (🔄 Counts Refresh, per-row 🔄 Refresh, 🔄 Re-fetch & Merge in Consolidated, 🛡️ RC Related's per-row 🔄 Re-scan, 🔄 47-Category Search Progress Reset) was checked and confirmed already correctly wired — no change needed there. (Separately noted but left untouched: a complete rescanOneKycPersonById function for a planned '🔄 Re-scan All' bulk button across RC/KYC/Consolidated exists in the code but was never attached to any visible button for any of the three — the KYC per-row version of this was explicitly removed earlier per user instruction, so this was left as-is rather than guessed back into the UI.) · v350 · importBackupShrinkGuard — 📂 Import Backup (a FULL REPLACE, unlike 🔀 Merge Backup from Other Phone) now warns clearly and asks for a second confirmation before importing a file with FEWER businesses than what's currently loaded — importing several backup files one after another via this button was silently discarding the bigger live list each time, and that smaller result then also overwrote the IndexedDB safety copy, so refresh had nothing bigger left to recover from (reported as the list reverting to an old ~20,000 count). No change to what happens once confirmed. · v348 · restoreFromCloudUnwrapFix — worker.js's GET /backup returns {savedAt,payload}, client now correctly unwraps .payload before restoring (previous v347 build passed the wrapper straight through, which would have failed looksLikeValidData). · v347 · restoreFromCloudBackup — added ☁️ Restore from Cloud button next to ☁️ Set Cloudflare Backup: pulls the latest text-only snapshot back from the same Cloudflare Worker/KV (Business List full replace, Insurance Renewal/KYC merge-safe, same as 📥 Import Backup's tested logic, just sourced over the network via GET /backup instead of a chosen file). Photo/PDF documents never touch Cloudflare — unaffected, still phone-only. · v346 · rcKycConsResultJumpIcons · v345 · waExtractNewBizMobileBlank — fix (Sep 3, 2026, Tamil: user asked that in the WhatsApp Extract Share Inbox popup, when the detected Mobile Number does NOT match an existing Business/Financer row — i.e. the business isn't in the Business List yet — the Mobile Number box should be left blank/unlocked for him to type in himself, rather than auto-filled/locked with a not-yet-listed number; the Business Name box should keep auto-filling exactly as it appears in the WhatsApp Extract regardless). The Mobile Number box now only auto-fills (and stays locked) when the number detected in the Share title/text already matches an existing Business or Financer row via shareFormFindBizByMobile/shareFormFindFinancerNamesByMobile; otherwise it's unlocked and starts blank, same as the existing no-detection safety-net path (manual typing + background RC/KYC content auto-match still both apply). Previous v344 note: waExtractSkipScan — the WhatsApp Extract Share Inbox popup's 🔗 Merge + RC/Insurance Scan button no longer runs the mandatory OCR scan step (runBulkOcrBatchCapped3) before reaching the Business List; it's now just ⬆️ Upload, straight from read/zip-PDF-expand to one-file-at-a-time upload." style="flex-shrink:0; white-space:nowrap; padding:3px 8px; border-radius:12px; border:1px solid #78716c; background:#f5f5f4; color:#57534e; font-weight:800; font-size:0.62rem;">🏷️ v352 · rescanAllPlusRealCallsBadge</span>
+    <span id="appVersionBadge" title="v353 · mergeLatestEditWinsByDate — Tamil request (Sep 8 2026): when 🔀 Merge Backup from Other Phone finds the SAME business on both sides (matched by mobile, as always), it no longer just fills blank fields — every edit made via ✏️ Save (saveRow → touchEdited) now stamps that record with a real _lastEditedAt timestamp, and on merge, whichever side's edit is genuinely newer wins the Name/Address/JustDial-link values, with the surviving record correctly marked Edited either way. Records with no timestamp on either side (anything edited before this version) safely fall back to the old blanks-only behaviour, so nothing already loaded is ever downgraded by an older/undated incoming copy. Also fixed a real bug found while doing this: the old blanket editedIds union after a merge was tagging the INCOMING file's raw record ids as edited even though matched records keep the LOCAL id and new records get a freshly generated one — those orphan ids were silently inflating the 📝 Edited counter without corresponding to any real row; the edited flag is now carried onto whichever id the record actually ends up with, precisely, with no orphans. 📂 Import Backup itself is untouched — it stays a deliberate FULL REPLACE (see v350's shrink-guard); this fix lives in 🔀 Merge Backup, the non-destructive tool for combining two phones'/files' data, which is what you should use to combine your currently-loaded 1700-edited data with a separate ~29,000-business backup file without losing either side. · v352 · rescanAllPlusRealCallsBadge — ① 🔄 Re-scan All bulk button added to all 3 planned panels (🛡️ RC Related/🪪 KYC/🗂️ Consolidated) — the rescanOneKycPersonById function had existed since v351 for exactly this but was never wired to a button; KYC's per-row Re-scan stays removed as explicitly instructed earlier, only the panel-header bulk button was added. RC's own new rescanOneRegnDocById originally wrote through the old upsertInsuranceRenewalRecord()/insurance_renewal_records_v1 store — caught before shipping (that store was already deliberately abandoned per an earlier fix) and corrected to write through upsertIntoInsuranceExtractQueue(), the real current single-source-of-truth the RC panel/WhatsApp Promo/Consolidated all read from. Consolidated's Re-scan All re-runs consolidateCustomerDocumentsForMobile for every ALREADY-compiled Mobile Number (refreshing from any newer KYC/RC documents); finding brand-new never-compiled mobiles stays fully automatic as before. All three fill-blank-only (never overwrite a good existing value), show live ⏳n/total progress, and end with one combined summary alert. ② 📞 Calls Today badge (was showing a manually typed-in '0/1000' — tap the badge, type a number, it just added to a fake localStorage total with zero connection to any real call) removed entirely; the badge now shows the SAME real, phone-pad-touch-based count already computed for the 📇 badge beside it (today's distinct Business List rows whose 📞 Call icon was actually tapped) — no target, no denominator, no manual entry. · v351 · manualRcKycBizSyncBtnAdded — audited every button in the app labeled/behaving as a 'Refresh': found ONE genuinely broken/missing one — syncRcKycToBusinessList's own comment described a visible '🔄 Manual Sync' button (manualRcKycBizSyncBtn) as already wired, but the actual <button> element and click listener were never added, only the auto-run-on-load version existed. Added the real button (next to 🔀 Merge Backup from Other Phone) wired to the exact same, already-working syncRcKycToBusinessList function. Every other Refresh-labeled control (🔄 Counts Refresh, per-row 🔄 Refresh, 🔄 Re-fetch & Merge in Consolidated, 🛡️ RC Related's per-row 🔄 Re-scan, 🔄 47-Category Search Progress Reset) was checked and confirmed already correctly wired — no change needed there. (Separately noted but left untouched: a complete rescanOneKycPersonById function for a planned '🔄 Re-scan All' bulk button across RC/KYC/Consolidated exists in the code but was never attached to any visible button for any of the three — the KYC per-row version of this was explicitly removed earlier per user instruction, so this was left as-is rather than guessed back into the UI.) · v350 · importBackupShrinkGuard — 📂 Import Backup (a FULL REPLACE, unlike 🔀 Merge Backup from Other Phone) now warns clearly and asks for a second confirmation before importing a file with FEWER businesses than what's currently loaded — importing several backup files one after another via this button was silently discarding the bigger live list each time, and that smaller result then also overwrote the IndexedDB safety copy, so refresh had nothing bigger left to recover from (reported as the list reverting to an old ~20,000 count). No change to what happens once confirmed. · v348 · restoreFromCloudUnwrapFix — worker.js's GET /backup returns {savedAt,payload}, client now correctly unwraps .payload before restoring (previous v347 build passed the wrapper straight through, which would have failed looksLikeValidData). · v347 · restoreFromCloudBackup — added ☁️ Restore from Cloud button next to ☁️ Set Cloudflare Backup: pulls the latest text-only snapshot back from the same Cloudflare Worker/KV (Business List full replace, Insurance Renewal/KYC merge-safe, same as 📥 Import Backup's tested logic, just sourced over the network via GET /backup instead of a chosen file). Photo/PDF documents never touch Cloudflare — unaffected, still phone-only. · v346 · rcKycConsResultJumpIcons · v345 · waExtractNewBizMobileBlank — fix (Sep 3, 2026, Tamil: user asked that in the WhatsApp Extract Share Inbox popup, when the detected Mobile Number does NOT match an existing Business/Financer row — i.e. the business isn't in the Business List yet — the Mobile Number box should be left blank/unlocked for him to type in himself, rather than auto-filled/locked with a not-yet-listed number; the Business Name box should keep auto-filling exactly as it appears in the WhatsApp Extract regardless). The Mobile Number box now only auto-fills (and stays locked) when the number detected in the Share title/text already matches an existing Business or Financer row via shareFormFindBizByMobile/shareFormFindFinancerNamesByMobile; otherwise it's unlocked and starts blank, same as the existing no-detection safety-net path (manual typing + background RC/KYC content auto-match still both apply). Previous v344 note: waExtractSkipScan — the WhatsApp Extract Share Inbox popup's 🔗 Merge + RC/Insurance Scan button no longer runs the mandatory OCR scan step (runBulkOcrBatchCapped3) before reaching the Business List; it's now just ⬆️ Upload, straight from read/zip-PDF-expand to one-file-at-a-time upload." style="flex-shrink:0; white-space:nowrap; padding:3px 8px; border-radius:12px; border:1px solid #78716c; background:#f5f5f4; color:#57534e; font-weight:800; font-size:0.62rem;">🏷️ v353 · mergeLatestEditWinsByDate</span>
   </div>
   <!-- 🎯 RC/KYC/Consolidate Result quick-jump icons — RELOCATED (explicit
   user instruction, Sep 8 2026, Tamil): originally placed here in the
@@ -5851,6 +5851,13 @@ function touchEdited(id){
   editTouchVersion++;
   const it = data.find(d => d.id === id);
   if(it && it.name) lastEditedName = it.name;
+  // v353 — stamp the record itself with WHEN it was last edited (ms epoch).
+  // This travels with the record inside `data` (no separate export/import
+  // code needed — it's just another field on the object), and is what
+  // 🔀 Merge Backup from Other Phone now uses to decide, business-by-
+  // business, which side's edited version is newer when the SAME business
+  // (matched by mobile number) was edited on both phones/files.
+  if(it) it._lastEditedAt = Date.now();
 }
 
 // ---------- One-time cleanup (2026-08-03): 298 businesses tagged for
@@ -32790,7 +32797,19 @@ document.getElementById('mergeBackupFile').addEventListener('change', (e) => {
     });
     const usedIds = new Set(data.map(d => d.id));
 
-    let added = 0, enriched = 0, untouchedDup = 0, privateLtdDivertedCount = 0, skippedDeleted = 0;
+    let added = 0, enriched = 0, untouchedDup = 0, privateLtdDivertedCount = 0, skippedDeleted = 0, newerVersionKept = 0;
+    // v353 — "எடிட்டர் பிசினஸ் லிஸ்ட்-ஆக இருந்தால் தேதி அடிப்படையில் எது
+    // லேட்டஸ்டாக இருக்கிறதோ அது வர வேண்டும்" (Tamil, Sep 8 2026): when the SAME
+    // business (matched by mobile, as always) was edited on BOTH sides, don't
+    // just silently keep whichever happens to already be loaded here — compare
+    // the incoming file's parsed.editedIds membership + its record's own
+    // _lastEditedAt stamp (added this version, see touchEdited()) against the
+    // one already loaded, and let the genuinely newer edit win the field
+    // values. Records with no _lastEditedAt on either side (anything edited
+    // before this version, or never edited) fall back to the original safe
+    // fill-blanks-only behaviour — nothing already loaded is ever downgraded
+    // by an older or equally-undated incoming copy.
+    const incEditedIdSet = new Set(parsed.editedIds || []);
     parsed.data.forEach(inc => {
       const incMobiles = (inc.mobiles||[]).map(normalizeMobile).filter(Boolean);
       let match = null;
@@ -32806,9 +32825,34 @@ document.getElementById('mergeBackupFile').addEventListener('change', (e) => {
             changed = true;
           }
         });
-        if(!match.name && inc.name){ match.name = inc.name; changed = true; }
-        if(!match.address && inc.address){ match.address = inc.address; changed = true; }
-        if(!match.justdial_link && inc.justdial_link){ match.justdial_link = inc.justdial_link; changed = true; }
+        const incWasEdited = incEditedIdSet.has(inc.id);
+        const matchWasEdited = editedIds.has(match.id);
+        const incStamp = Number(inc._lastEditedAt) || 0;
+        const matchStamp = Number(match._lastEditedAt) || 0;
+        // Newer wins ONLY when both sides actually carry a real, comparable
+        // edit stamp AND the incoming one is strictly later — otherwise fall
+        // through to the original blanks-only enrichment below, so nothing
+        // dated is ever clobbered by something undated.
+        const incomingIsNewerEdit = incWasEdited && incStamp > 0 && incStamp > matchStamp;
+        if(incomingIsNewerEdit){
+          if(inc.name) match.name = inc.name;
+          if(inc.address) match.address = inc.address;
+          if(inc.justdial_link) match.justdial_link = inc.justdial_link;
+          match._lastEditedAt = incStamp;
+          editedIds.add(match.id); // the newer edit is, by definition, an edited record
+          changed = true; newerVersionKept++;
+        } else {
+          if(!match.name && inc.name){ match.name = inc.name; changed = true; }
+          if(!match.address && inc.address){ match.address = inc.address; changed = true; }
+          if(!match.justdial_link && inc.justdial_link){ match.justdial_link = inc.justdial_link; changed = true; }
+          // Even when the incoming copy doesn't win the field values, if IT
+          // was edited and the one loaded here was never marked edited at
+          // all, don't lose that "this business was worked on" signal —
+          // mark it edited here too (previously this info silently vanished
+          // because only the incoming file's own record id — which gets
+          // discarded on a match — was ever added to editedIds).
+          if(incWasEdited && !matchWasEdited){ editedIds.add(match.id); changed = true; }
+        }
         if(changed) enriched++; else untouchedDup++;
       } else if(incMobiles.length && incMobiles.every(m => deletedMobiles.has(m))){
         // Every mobile number on this incoming record was deliberately
@@ -32824,17 +32868,30 @@ document.getElementById('mergeBackupFile').addEventListener('change', (e) => {
         let newId = inc.id;
         if(!newId || usedIds.has(newId)) newId = 'merged_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
         usedIds.add(newId);
+        const wasEditedOnIncoming = incEditedIdSet.has(inc.id); // check BEFORE id is replaced below
         const newItem = Object.assign({}, inc, { id: newId, mobiles: incMobiles, name: stripNameHonorifics(inc.name) });
         assignDateIfMissing(newItem);
         data.push(newItem);
         incMobiles.forEach(m => mobileIndex.set(m, newItem));
+        // v353 — carry the "edited" flag over onto the NEW id this record was
+        // just given (its original id from the incoming file is discarded
+        // above, so the old blanket "add every incoming editedIds id" further
+        // down would otherwise tag an id that no longer exists on any record).
+        if(wasEditedOnIncoming) editedIds.add(newId);
         added++;
       }
     });
 
     // Union the progress-tracking sets so nothing tracked on either phone is lost.
+    // NOTE (v353): editedIds is deliberately NOT blanket-unioned here anymore —
+    // the incoming file's own record ids get replaced/discarded above (matched
+    // records keep the LOCAL id, newly-added records get a freshly generated
+    // id), so blindly adding the incoming file's raw editedIds would tag ids
+    // that don't correspond to any record in `data` at all (inflating the
+    // 📝 Edited count for nothing). The matched-record and newly-added-record
+    // branches above each already carry the "was this edited" flag over onto
+    // whichever id the record actually ends up with.
     (parsed.enquiredIds||[]).forEach(id => enquiredIds.add(id));
-    (parsed.editedIds||[]).forEach(id => editedIds.add(id));
     (parsed.oldIds||[]).forEach(id => oldIds.add(id));
     (parsed.targetIds||[]).forEach(id => targetIds.add(id));
     (parsed.npIds||[]).forEach(id => npIds.add(id));
@@ -32883,7 +32940,7 @@ document.getElementById('mergeBackupFile').addEventListener('change', (e) => {
     updateStats();
     renderPrivateLtdList();
     e.target.value = '';
-    alert(`🔀 Merge complete.\n\n➕ New businesses added: ${added}\n✨ Existing businesses enriched: ${enriched}\n➖ Exact duplicates (no new info): ${untouchedDup}\n🚫 Skipped (deliberately deleted here earlier): ${skippedDeleted}\n🏢 Diverted to Private Ltd Promo: ${privateLtdDivertedCount}\n\nTotal now: ${data.length} businesses.`);
+    alert(`🔀 Merge complete.\n\n➕ New businesses added: ${added}\n📅 Updated to the newer edited version (by edit date): ${newerVersionKept}\n✨ Existing businesses enriched: ${enriched - newerVersionKept > 0 ? enriched - newerVersionKept : 0}\n➖ Exact duplicates (no new info): ${untouchedDup}\n🚫 Skipped (deliberately deleted here earlier): ${skippedDeleted}\n🏢 Diverted to Private Ltd Promo: ${privateLtdDivertedCount}\n\nTotal now: ${data.length} businesses.`);
   };
   reader.onerror = () => { alert('Could not read that file. Please try again.'); e.target.value=''; };
   reader.readAsText(file);
